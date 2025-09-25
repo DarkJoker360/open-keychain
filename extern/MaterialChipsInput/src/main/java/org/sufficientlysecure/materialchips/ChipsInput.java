@@ -22,7 +22,7 @@ import android.widget.Filter.FilterListener;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.beloo.widget.chipslayoutmanager.ChipsLayoutManager;
+//import com.beloo.widget.chipslayoutmanager.ChipsLayoutManager;
 import org.sufficientlysecure.materialchips.RecyclerItemClickListener.OnItemClickListener;
 import org.sufficientlysecure.materialchips.adapter.ChipsAdapter;
 import org.sufficientlysecure.materialchips.adapter.FilterableAdapter;
@@ -101,10 +101,10 @@ public abstract class ChipsInput<T extends FilterableItem> extends ScrollViewMax
             }
         }
 
-        ChipsLayoutManager chipsLayoutManager = ChipsLayoutManager.newBuilder(mContext)
+        /*ChipsLayoutManager chipsLayoutManager = ChipsLayoutManager.newBuilder(mContext)
                 .setOrientation(ChipsLayoutManager.HORIZONTAL)
                 .build();
-        chipsRecyclerView.setLayoutManager(chipsLayoutManager);
+        chipsRecyclerView.setLayoutManager(chipsLayoutManager);*/
         chipsRecyclerView.setNestedScrollingEnabled(false);
 
         setupClickOutsideCallback();

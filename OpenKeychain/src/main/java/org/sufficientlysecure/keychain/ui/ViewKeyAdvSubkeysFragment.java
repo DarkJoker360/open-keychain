@@ -95,7 +95,13 @@ public class ViewKeyAdvSubkeysFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
 
         subkeysAdapter = new FlexibleAdapter<>(null, null, true);
-        subkeysAdapter.addListener((OnItemClickListener) (view, position) -> editSubkey(position));
+        subkeysAdapter.addListener(new OnItemClickListener() {
+            @Override
+            public boolean onItemClick(int position) {
+                editSubkey(position);
+                return true;
+            }
+        });
         subkeysList.setAdapter(subkeysAdapter);
 
         ViewKeyAdvViewModel viewModel = ViewModelProviders.of(requireActivity()).get(ViewKeyAdvViewModel.class);

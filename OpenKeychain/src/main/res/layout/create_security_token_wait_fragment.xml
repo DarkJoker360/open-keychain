@@ -29,8 +29,7 @@
             <nordpol.android.NfcGuideView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                custom:nfc_device="card_black"/>
+                android:layout_gravity="center_horizontal"/>
 
             <FrameLayout
                 android:layout_width="match_parent"

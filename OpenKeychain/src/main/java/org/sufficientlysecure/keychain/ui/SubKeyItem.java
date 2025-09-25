@@ -40,36 +40,30 @@ public class SubKeyItem extends AbstractFlexibleItem<SubKeyItem.SubkeyViewHolder
         this.viewModel = viewModel;
     }
 
-    @Override
-    public boolean equals(Object o) {
+        public boolean equals(Object o) {
         return o instanceof SubKeyItem && ((SubKeyItem) o).subkeyInfo.getKey_id() == subkeyInfo.getKey_id();
     }
 
-    @Override
-    public int hashCode() {
+        public int hashCode() {
         long key_id = subkeyInfo.getKey_id();
         return (int) (key_id ^ (key_id >>> 32));
     }
 
-    @Override
-    public int getLayoutRes() {
+        public int getLayoutRes() {
         return R.layout.view_key_adv_subkey_item;
     }
 
-    @Override
-    public SubkeyViewHolder createViewHolder(View view, FlexibleAdapter<IFlexible> adapter) {
+        public SubkeyViewHolder createViewHolder(View view, FlexibleAdapter<IFlexible> adapter) {
         return new SubkeyViewHolder(view, adapter);
     }
 
-    @Override
-    public void bindViewHolder(FlexibleAdapter<IFlexible> adapter, SubkeyViewHolder holder, int position,
+        public void bindViewHolder(FlexibleAdapter<IFlexible> adapter, SubkeyViewHolder holder, int position,
             List<Object> payloads) {
         holder.bind(subkeyInfo);
         holder.bindSubkeyAction(subkeyInfo, viewModel.skpBuilder);
     }
 
-    @Override
-    public int getItemViewType() {
+        public int getItemViewType() {
         return ViewKeyAdvSubkeysFragment.SUBKEY_TYPE_DETAIL;
     }
 

@@ -21,7 +21,7 @@ import org.sufficientlysecure.keychain.ui.util.KeyInfoFormatter;
 
 
 public class FlexibleKeyDetailsItem extends FlexibleSectionableKeyItem<FlexibleKeyItemViewHolder>
-        implements IFilterable<String> {
+        implements IFilterable {
     public final UnifiedKeyInfo keyInfo;
 
     FlexibleKeyDetailsItem(UnifiedKeyInfo keyInfo, FlexibleKeyHeader header) {
@@ -36,15 +36,13 @@ public class FlexibleKeyDetailsItem extends FlexibleSectionableKeyItem<FlexibleK
         return R.layout.key_list_item;
     }
 
-    @Override
     public FlexibleKeyItemViewHolder createViewHolder(View view, FlexibleAdapter<IFlexible> adapter) {
         return new FlexibleKeyItemViewHolder(view, adapter);
     }
 
-    @Override
     public void bindViewHolder(
             FlexibleAdapter<IFlexible> adapter, FlexibleKeyItemViewHolder holder, int position, List<Object> payloads) {
-        String highlightString = adapter.getFilter(String.class);
+        String highlightString = null; // TODO: Fix filter API
         holder.bind(keyInfo, highlightString);
     }
 

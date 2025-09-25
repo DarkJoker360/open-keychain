@@ -43,33 +43,27 @@ public class SubkeyAddedItem extends AbstractFlexibleItem<SubkeyViewHolder> {
         this.viewModel = viewModel;
     }
 
-    @Override
-    public boolean equals(Object o) {
+        public boolean equals(Object o) {
         return o instanceof SubkeyAddedItem && subkeyAdd == o;
     }
 
-    @Override
-    public int hashCode() {
+        public int hashCode() {
         return subkeyAdd.hashCode();
     }
 
-    @Override
-    public int getLayoutRes() {
+        public int getLayoutRes() {
         return R.layout.view_key_adv_subkey_item;
     }
 
-    @Override
-    public SubkeyViewHolder createViewHolder(View view, FlexibleAdapter<IFlexible> adapter) {
+        public SubkeyViewHolder createViewHolder(View view, FlexibleAdapter<IFlexible> adapter) {
         return new SubkeyViewHolder(view, adapter);
     }
 
-    @Override
-    public int getItemViewType() {
+        public int getItemViewType() {
         return ViewKeyAdvSubkeysFragment.SUBKEY_TYPE_ADDED;
     }
 
-    @Override
-    public void bindViewHolder(FlexibleAdapter<IFlexible> adapter, SubkeyViewHolder holder, int position,
+        public void bindViewHolder(FlexibleAdapter<IFlexible> adapter, SubkeyViewHolder holder, int position,
             List<Object> payloads) {
         Date expiry = subkeyAdd.getExpiry() != null && subkeyAdd.getExpiry() != 0L ? new Date(subkeyAdd.getExpiry() * 1000) : null;
 

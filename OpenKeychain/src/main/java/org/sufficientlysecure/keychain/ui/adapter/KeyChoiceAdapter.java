@@ -39,19 +39,19 @@ public class KeyChoiceAdapter extends FlexibleAdapter<KeyChoiceItem> {
     public static KeyChoiceAdapter createSingleClickableAdapter(Context context, List<UnifiedKeyInfo> items,
             OnKeyClickListener onKeyClickListener,
             KeyDisabledPredicate keyDisabledPredicate) {
-        return new KeyChoiceAdapter(context, items, Objects.requireNonNull(onKeyClickListener), Mode.IDLE,
+        return new KeyChoiceAdapter(context, items, Objects.requireNonNull(onKeyClickListener), 0,
                 keyDisabledPredicate
         );
     }
 
     public static KeyChoiceAdapter createSingleChoiceAdapter(Context context, List<UnifiedKeyInfo> items,
             KeyDisabledPredicate keyDisabledPredicate) {
-        return new KeyChoiceAdapter(context, items, null, Mode.SINGLE, keyDisabledPredicate);
+        return new KeyChoiceAdapter(context, items, null, 1, keyDisabledPredicate);
     }
 
     public static KeyChoiceAdapter createMultiChoiceAdapter(Context context, List<UnifiedKeyInfo> items,
             KeyDisabledPredicate keyDisabledPredicate) {
-        return new KeyChoiceAdapter(context, items, null, Mode.MULTI, keyDisabledPredicate);
+        return new KeyChoiceAdapter(context, items, null, 2, keyDisabledPredicate);
     }
 
     private KeyChoiceAdapter(Context context, List<UnifiedKeyInfo> items,
@@ -59,7 +59,12 @@ public class KeyChoiceAdapter extends FlexibleAdapter<KeyChoiceItem> {
             @Nullable KeyDisabledPredicate keyDisabledPredicate) {
         super(null, null, true);
         setMode(idle);
-        addListener((OnItemClickListener) (view, position) -> onClickItem(position));
+        addListener(new OnItemClickListener() {
+            @Override
+            public boolean onItemClick(int position) {
+                return KeyChoiceAdapter.this.onClickItem(position);
+            }
+        });
         updateDataSet(getKeyChoiceItems(items, keyDisabledPredicate), false);
         this.keyInfoFormatter = new KeyInfoFormatter(context);
         this.onKeyClickListener = onKeyClickListener;
@@ -88,11 +93,11 @@ public class KeyChoiceAdapter extends FlexibleAdapter<KeyChoiceItem> {
             return false;
         }
 
-        if (getMode() == Mode.MULTI) {
+        if (getMode() == 2) {
             toggleSelection(position);
             notifyItemChanged(position);
             return true;
-        } else if (getMode() == Mode.SINGLE) {
+        } else if (getMode() == 1) {
             setActiveItem(position);
             return true;
         }
@@ -102,7 +107,7 @@ public class KeyChoiceAdapter extends FlexibleAdapter<KeyChoiceItem> {
     }
 
     public void setActiveItem(Integer newActiveItem) {
-        if (getMode() != Mode.SINGLE) {
+        if (getMode() != 1) {
             throw new IllegalStateException("Cannot get active item in single select mode!");
         }
 
@@ -121,7 +126,7 @@ public class KeyChoiceAdapter extends FlexibleAdapter<KeyChoiceItem> {
     }
 
     public UnifiedKeyInfo getActiveItem() {
-        if (getMode() != Mode.SINGLE) {
+        if (getMode() != 1) {
             throw new IllegalStateException("Cannot get active item in single select mode!");
         }
         if (activeItem == null) {
@@ -147,7 +152,7 @@ public class KeyChoiceAdapter extends FlexibleAdapter<KeyChoiceItem> {
     }
 
     public void setSelectionByIds(Set<Long> checkedIds) {
-        if (getMode() != Mode.MULTI) {
+        if (getMode() != 2) {
             throw new IllegalStateException("Cannot get active item in single select mode!");
         }
 
@@ -161,7 +166,7 @@ public class KeyChoiceAdapter extends FlexibleAdapter<KeyChoiceItem> {
     }
 
     public Set<Long> getSelectionIds() {
-        if (getMode() != Mode.MULTI) {
+        if (getMode() != 2) {
             throw new IllegalStateException("Cannot get active item in single select mode!");
         }
 
@@ -189,12 +194,10 @@ public class KeyChoiceAdapter extends FlexibleAdapter<KeyChoiceItem> {
             return R.layout.key_choice_item;
         }
 
-        @Override
         public KeyChoiceViewHolder createViewHolder(View view, FlexibleAdapter<IFlexible> adapter) {
             return new KeyChoiceViewHolder(view, adapter);
         }
 
-        @Override
         public void bindViewHolder(FlexibleAdapter<IFlexible> adapter, KeyChoiceViewHolder holder, int position,
                 List<Object> payloads) {
             boolean isActive = adapter.isSelected(position);
@@ -242,18 +245,18 @@ public class KeyChoiceAdapter extends FlexibleAdapter<KeyChoiceItem> {
             keyInfoFormatter.formatCreationDate(vCreation);
 
             switch (choiceMode) {
-                case Mode.IDLE: {
+                case 0: {
                     vRadio.setVisibility(View.GONE);
                     vCheckbox.setVisibility(View.GONE);
                     break;
                 }
-                case Mode.SINGLE: {
+                case 1: {
                     vRadio.setVisibility(View.VISIBLE);
                     vRadio.setChecked(isActive);
                     vCheckbox.setVisibility(View.GONE);
                     break;
                 }
-                case Mode.MULTI: {
+                case 2: {
                     vCheckbox.setVisibility(View.VISIBLE);
                     vCheckbox.setChecked(isActive);
                     vRadio.setVisibility(View.GONE);

@@ -145,12 +145,6 @@
         android:layout_centerHorizontal="true"
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
-        app:fastScrollerAutoHideEnabled="true"
-        app:fastScrollerAutoHideDelayInMillis="1000"
-        app:fastScrollerBubblePosition="adjacent"
-        app:fastScrollerBubbleEnabled="true"
-        app:fastScrollerHandleAlwaysVisible="false"
-        app:fastScrollerIgnoreTouchesOutsideHandle="false"
         tools:visibility="visible" />
 
 </FrameLayout>

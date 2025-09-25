@@ -10,8 +10,7 @@
     <nordpol.android.NfcGuideView
         android:id="@+id/nfc_guide_view"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        custom:nfc_device="card_black"/>
+        android:layout_height="wrap_content"/>
 
     <include layout="@layout/security_token_operation_activity_toolable_view_animator" />
 

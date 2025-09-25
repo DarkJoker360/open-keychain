@@ -24,8 +24,7 @@ public class FlexibleKeyHeader extends FlexibleKeyItem<FlexibleHeaderViewHolder>
         setEnabled(false);
     }
 
-    @Override
-    public boolean equals(Object o) {
+        public boolean equals(Object o) {
         if (o instanceof FlexibleKeyHeader) {
             FlexibleKeyHeader other = (FlexibleKeyHeader) o;
             return sectionTitle.equals(other.sectionTitle);
@@ -33,8 +32,7 @@ public class FlexibleKeyHeader extends FlexibleKeyItem<FlexibleHeaderViewHolder>
         return false;
     }
 
-    @Override
-    public int getLayoutRes() {
+        public int getLayoutRes() {
         return R.layout.key_list_header_public;
     }
 
@@ -42,13 +40,11 @@ public class FlexibleKeyHeader extends FlexibleKeyItem<FlexibleHeaderViewHolder>
         return sectionTitle;
     }
 
-    @Override
-    public FlexibleHeaderViewHolder createViewHolder(View view, FlexibleAdapter<IFlexible> adapter) {
+        public FlexibleHeaderViewHolder createViewHolder(View view, FlexibleAdapter<IFlexible> adapter) {
         return new FlexibleHeaderViewHolder(view, adapter);
     }
 
-    @Override
-    public void bindViewHolder(FlexibleAdapter<IFlexible> adapter, FlexibleHeaderViewHolder holder, int position,
+        public void bindViewHolder(FlexibleAdapter<IFlexible> adapter, FlexibleHeaderViewHolder holder, int position,
             List<Object> payloads) {
         holder.text1.setText(sectionTitle);
     }

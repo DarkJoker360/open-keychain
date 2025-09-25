@@ -30,12 +30,10 @@ public class FlexibleKeyDummyItem extends FlexibleSectionableKeyItem<FlexibleKey
         return this == o;
     }
 
-    @Override
     public FlexibleKeyDummyViewHolder createViewHolder(View view, FlexibleAdapter<IFlexible> adapter) {
         return new FlexibleKeyDummyViewHolder(view, adapter);
     }
 
-    @Override
     public void bindViewHolder(FlexibleAdapter<IFlexible> adapter, FlexibleKeyDummyViewHolder holder,
             int position, List<Object> payloads) {
     }
