@@ -20,10 +20,14 @@ package org.sufficientlysecure.keychain.ui.base;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -44,9 +48,17 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        enableEdgeToEdge();
         initTheme();
         initLayout();
         initToolbar();
+    }
+
+    private void enableEdgeToEdge() {
+        // Enable edge-to-edge for Android 15+ only
+        if (Build.VERSION.SDK_INT >= 35) {
+            WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        }
     }
 
     @Override
@@ -81,6 +93,25 @@ public abstract class BaseActivity extends AppCompatActivity {
         if (mToolbar != null) {
             setSupportActionBar(mToolbar);
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            setupToolbarEdgeToEdge();
+        }
+    }
+
+    private void setupToolbarEdgeToEdge() {
+        if (Build.VERSION.SDK_INT >= 35 && mToolbar != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(mToolbar, (view, windowInsets) -> {
+                androidx.core.graphics.Insets statusBarInsets = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars());
+
+                // Apply only top padding for status bar, preserve existing padding for other sides
+                view.setPadding(
+                    view.getPaddingLeft(),
+                    statusBarInsets.top,
+                    view.getPaddingRight(),
+                    view.getPaddingBottom()
+                );
+
+                return windowInsets;
+            });
         }
     }
 

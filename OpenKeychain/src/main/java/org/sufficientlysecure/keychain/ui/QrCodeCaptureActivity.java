@@ -21,12 +21,17 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import android.view.KeyEvent;
+import android.view.View;
 
 import com.journeyapps.barcodescanner.CaptureManager;
 import com.journeyapps.barcodescanner.CompoundBarcodeView;
@@ -41,12 +46,15 @@ public class QrCodeCaptureActivity extends FragmentActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        enableEdgeToEdge();
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.qr_code_capture_activity);
 
         barcodeScannerView = findViewById(R.id.zxing_barcode_scanner);
         barcodeScannerView.setStatusText(getString(R.string.import_qr_code_text));
+
+        setupEdgeToEdgeForScanner();
 
         if (savedInstanceState != null) {
             init(barcodeScannerView, getIntent(), savedInstanceState);
@@ -121,5 +129,28 @@ public class QrCodeCaptureActivity extends FragmentActivity {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         return barcodeScannerView.onKeyDown(keyCode, event) || super.onKeyDown(keyCode, event);
+    }
+
+    private void enableEdgeToEdge() {
+        // Enable edge-to-edge for Android 15+ only
+        if (Build.VERSION.SDK_INT >= 35) {
+            WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        }
+    }
+
+    private void setupEdgeToEdgeForScanner() {
+        if (Build.VERSION.SDK_INT >= 35 && barcodeScannerView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(barcodeScannerView, (view, windowInsets) -> {
+                androidx.core.graphics.Insets systemBarsInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+                view.setPadding(
+                    systemBarsInsets.left,
+                    0,
+                    systemBarsInsets.right,
+                    systemBarsInsets.bottom
+                );
+
+                return windowInsets;
+            });
+        }
     }
 }

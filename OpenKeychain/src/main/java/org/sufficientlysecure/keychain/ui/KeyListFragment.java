@@ -203,9 +203,33 @@ public class KeyListFragment extends Fragment
         if (recyclerView != null) {
             recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
             recyclerView.setHasFixedSize(true);
+            setupRecyclerViewEdgeToEdge();
         }
 
         return view;
+    }
+
+    private void setupRecyclerViewEdgeToEdge() {
+        if (android.os.Build.VERSION.SDK_INT >= 35 && recyclerView != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(recyclerView, (v, windowInsets) -> {
+                androidx.core.graphics.Insets navBarInsets = windowInsets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+
+                // Only add bottom padding for navigation bar if it exists
+                // Keep the existing FAB padding (72dp) and add navigation bar height on top
+                int fabPadding = (int) (72 * getResources().getDisplayMetrics().density); // Convert 72dp to px
+                int bottomPadding = navBarInsets.bottom > 0 ?
+                    fabPadding + navBarInsets.bottom : fabPadding;
+
+                v.setPadding(
+                    v.getPaddingLeft(),
+                    v.getPaddingTop(),
+                    v.getPaddingRight(),
+                    bottomPadding
+                );
+
+                return windowInsets;
+            });
+        }
     }
 
     /**

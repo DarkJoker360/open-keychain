@@ -23,6 +23,7 @@ import android.os.Bundle;
 import android.view.View;
 
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -157,6 +158,20 @@ public class MainActivity extends BaseSecurityTokenActivity implements FabContai
     @Override
     protected void initLayout() {
         setContentView(R.layout.main_activity);
+        setupEdgeToEdgeDrawer();
+    }
+
+    private void setupEdgeToEdgeDrawer() {
+        // Handle edge-to-edge for the drawer if needed
+        if (android.os.Build.VERSION.SDK_INT >= 35) {
+            View rootView = findViewById(android.R.id.content);
+            if (rootView != null) {
+                ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, windowInsets) -> {
+                    // Let insets pass through to child views that need them
+                    return windowInsets;
+                });
+            }
+        }
     }
 
     @Override

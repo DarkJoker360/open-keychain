@@ -26,6 +26,7 @@ import java.util.List;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
@@ -39,6 +40,9 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import org.sufficientlysecure.keychain.Constants;
 import org.sufficientlysecure.keychain.R;
 import org.sufficientlysecure.keychain.compatibility.AppCompatPreferenceActivity;
@@ -65,9 +69,19 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         mThemeChanger = new ThemeChanger(this);
         mThemeChanger.setThemes(R.style.Theme_Keychain_Light, R.style.Theme_Keychain_Dark);
         mThemeChanger.changeTheme();
+
+        enableEdgeToEdge();
+
         super.onCreate(savedInstanceState);
 
         setupToolbar();
+    }
+
+    private void enableEdgeToEdge() {
+        // Enable edge-to-edge for Android 15+ only
+        if (Build.VERSION.SDK_INT >= 35) {
+            WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        }
     }
 
     @Override
@@ -96,6 +110,10 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         root.addView(toolbarContainer);
 
         Toolbar toolbar = toolbarContainer.findViewById(R.id.toolbar);
+        setupToolbarEdgeToEdge(toolbar);
+
+        // Setup edge-to-edge for the preference content
+        setupPreferenceContentEdgeToEdge(content);
 
         toolbar.setTitle(R.string.title_preferences);
         // noinspection deprecation, TODO use alternative in API level 21
@@ -107,6 +125,42 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 finish();
             }
         });
+    }
+
+    private void setupToolbarEdgeToEdge(Toolbar toolbar) {
+        if (Build.VERSION.SDK_INT >= 35 && toolbar != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(toolbar, (view, windowInsets) -> {
+                androidx.core.graphics.Insets statusBarInsets = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars());
+
+                // Apply only top padding for status bar
+                view.setPadding(
+                    view.getPaddingLeft(),
+                    statusBarInsets.top,
+                    view.getPaddingRight(),
+                    view.getPaddingBottom()
+                );
+
+                return windowInsets;
+            });
+        }
+    }
+
+    private void setupPreferenceContentEdgeToEdge(LinearLayout content) {
+        if (Build.VERSION.SDK_INT >= 35 && content != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(content, (view, windowInsets) -> {
+                androidx.core.graphics.Insets navBarInsets = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars());
+
+                // Apply bottom padding for navigation bar if it exists
+                view.setPadding(
+                    view.getPaddingLeft(),
+                    view.getPaddingTop(),
+                    view.getPaddingRight(),
+                    navBarInsets.bottom > 0 ? navBarInsets.bottom : view.getPaddingBottom()
+                );
+
+                return windowInsets;
+            });
+        }
     }
 
     public static abstract class PresetPreferenceFragment extends PreferenceFragment {
