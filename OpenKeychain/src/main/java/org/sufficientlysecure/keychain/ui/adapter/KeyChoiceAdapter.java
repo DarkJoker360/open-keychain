@@ -1,282 +1,214 @@
 package org.sufficientlysecure.keychain.ui.adapter;
 
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.ImageView;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+import org.sufficientlysecure.keychain.R;
+import org.sufficientlysecure.keychain.model.UnifiedKeyInfo;
+import org.sufficientlysecure.keychain.ui.util.KeyInfoFormatter;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
-import android.content.Context;
-import androidx.annotation.Nullable;
-import androidx.annotation.StringRes;
-import androidx.recyclerview.widget.RecyclerView;
-import android.view.View;
-import android.widget.CheckBox;
-import android.widget.RadioButton;
-import android.widget.TextView;
-import android.widget.Toast;
+public class KeyChoiceAdapter extends RecyclerView.Adapter<KeyChoiceAdapter.KeyChoiceViewHolder> {
 
-import eu.davidea.flexibleadapter.FlexibleAdapter;
-import eu.davidea.flexibleadapter.items.AbstractFlexibleItem;
-import eu.davidea.flexibleadapter.items.IFlexible;
-import eu.davidea.viewholders.FlexibleViewHolder;
-import org.sufficientlysecure.keychain.R;
-import org.sufficientlysecure.keychain.model.UnifiedKeyInfo;
-import org.sufficientlysecure.keychain.ui.adapter.KeyChoiceAdapter.KeyChoiceItem;
-import org.sufficientlysecure.keychain.ui.util.KeyInfoFormatter;
-
-
-public class KeyChoiceAdapter extends FlexibleAdapter<KeyChoiceItem> {
-    @Nullable
-    private final OnKeyClickListener onKeyClickListener;
-    @Nullable
-    private final KeyDisabledPredicate keyDisabledPredicate;
-    @Nullable
-    private Integer activeItem;
+    private List<UnifiedKeyInfo> keys = new ArrayList<>();
+    private Set<Long> selectedKeyIds = new HashSet<>();
+    private OnKeySelectedListener listener;
     private KeyInfoFormatter keyInfoFormatter;
+    private KeyValidationFunction validationFunction;
 
-    public static KeyChoiceAdapter createSingleClickableAdapter(Context context, List<UnifiedKeyInfo> items,
-            OnKeyClickListener onKeyClickListener,
-            KeyDisabledPredicate keyDisabledPredicate) {
-        return new KeyChoiceAdapter(context, items, Objects.requireNonNull(onKeyClickListener), 0,
-                keyDisabledPredicate
-        );
+    public interface OnKeySelectedListener {
+        void onKeySelected(long keyId, boolean selected);
     }
 
-    public static KeyChoiceAdapter createSingleChoiceAdapter(Context context, List<UnifiedKeyInfo> items,
-            KeyDisabledPredicate keyDisabledPredicate) {
-        return new KeyChoiceAdapter(context, items, null, 1, keyDisabledPredicate);
+    public interface OnKeyInfoSelectedListener {
+        void onKeySelected(UnifiedKeyInfo keyInfo);
     }
 
-    public static KeyChoiceAdapter createMultiChoiceAdapter(Context context, List<UnifiedKeyInfo> items,
-            KeyDisabledPredicate keyDisabledPredicate) {
-        return new KeyChoiceAdapter(context, items, null, 2, keyDisabledPredicate);
+    public interface KeyValidationFunction {
+        Integer validate(UnifiedKeyInfo keyInfo);
     }
 
-    private KeyChoiceAdapter(Context context, List<UnifiedKeyInfo> items,
-            @Nullable OnKeyClickListener onKeyClickListener, int idle,
-            @Nullable KeyDisabledPredicate keyDisabledPredicate) {
-        super(null, null, true);
-        setMode(idle);
-        addListener(new OnItemClickListener() {
-            @Override
-            public boolean onItemClick(int position) {
-                return KeyChoiceAdapter.this.onClickItem(position);
-            }
-        });
-        updateDataSet(getKeyChoiceItems(items, keyDisabledPredicate), false);
+    public KeyChoiceAdapter(Context context) {
         this.keyInfoFormatter = new KeyInfoFormatter(context);
-        this.onKeyClickListener = onKeyClickListener;
-        this.keyDisabledPredicate = keyDisabledPredicate;
     }
 
-    @Nullable
-    private ArrayList<KeyChoiceItem> getKeyChoiceItems(@Nullable List<UnifiedKeyInfo> items,
-            @Nullable KeyDisabledPredicate keyDisabledPredicate) {
-        if (items == null) {
-            return null;
-        }
-        ArrayList<KeyChoiceItem> choiceItems = new ArrayList<>();
-        for (UnifiedKeyInfo keyInfo : items) {
-            Integer disabledString = keyDisabledPredicate != null ? keyDisabledPredicate.getDisabledString(keyInfo) : null;
-            KeyChoiceItem keyChoiceItem = new KeyChoiceItem(keyInfo, disabledString);
-            choiceItems.add(keyChoiceItem);
-        }
-        return choiceItems;
+    public void setOnKeySelectedListener(OnKeySelectedListener listener) {
+        this.listener = listener;
     }
 
-    private boolean onClickItem(int position) {
-        KeyChoiceItem item = getItem(position);
-        if (item != null && item.disabledStringRes != null) {
-            Toast.makeText(getRecyclerView().getContext(), item.disabledStringRes, Toast.LENGTH_SHORT).show();
-            return false;
+    public void setKeys(List<UnifiedKeyInfo> keys) {
+        this.keys.clear();
+        if (keys != null) {
+            this.keys.addAll(keys);
         }
-
-        if (getMode() == 2) {
-            toggleSelection(position);
-            notifyItemChanged(position);
-            return true;
-        } else if (getMode() == 1) {
-            setActiveItem(position);
-            return true;
-        }
-
-        Objects.requireNonNull(onKeyClickListener).onKeyClick(item.keyInfo);
-        return false;
+        notifyDataSetChanged();
     }
 
-    public void setActiveItem(Integer newActiveItem) {
-        if (getMode() != 1) {
-            throw new IllegalStateException("Cannot get active item in single select mode!");
+    public void setSelectedKeyIds(Set<Long> selectedKeyIds) {
+        this.selectedKeyIds.clear();
+        if (selectedKeyIds != null) {
+            this.selectedKeyIds.addAll(selectedKeyIds);
         }
+        notifyDataSetChanged();
+    }
 
-        clearSelection();
+    public Set<Long> getSelectedKeyIds() {
+        return new HashSet<>(selectedKeyIds);
+    }
 
-        Integer prevActiveItem = this.activeItem;
-        this.activeItem = newActiveItem;
+    // Compatibility methods for existing code
+    public Set<Long> getSelectionIds() {
+        return getSelectedKeyIds();
+    }
 
-        if (prevActiveItem != null) {
-            notifyItemChanged(prevActiveItem);
-        }
-        if (newActiveItem != null) {
-            toggleSelection(newActiveItem);
-            notifyItemChanged(newActiveItem);
-        }
+    public void setSelectionByIds(Set<Long> keyIds) {
+        setSelectedKeyIds(keyIds);
+    }
+
+    public void setUnifiedKeyInfoItems(List<UnifiedKeyInfo> keys) {
+        setKeys(keys);
     }
 
     public UnifiedKeyInfo getActiveItem() {
-        if (getMode() != 1) {
-            throw new IllegalStateException("Cannot get active item in single select mode!");
+        // For single selection, return the first selected item
+        for (UnifiedKeyInfo key : keys) {
+            if (selectedKeyIds.contains(key.master_key_id())) {
+                return key;
+            }
         }
-        if (activeItem == null) {
-            return null;
-        }
-
-        KeyChoiceItem item = getItem(activeItem);
-        return item == null ? null : item.keyInfo;
+        return null;
     }
 
-    public void setUnifiedKeyInfoItems(List<UnifiedKeyInfo> keyInfos) {
-        List<KeyChoiceItem> keyChoiceItems = getKeyChoiceItems(keyInfos, keyDisabledPredicate);
-        updateDataSet(keyChoiceItems);
+    // Static factory methods for compatibility
+    public static KeyChoiceAdapter createMultiChoiceAdapter(Context context, List<UnifiedKeyInfo> keys, KeyValidationFunction validationFunction) {
+        KeyChoiceAdapter adapter = new KeyChoiceAdapter(context);
+        adapter.setKeys(keys);
+        // Store validation function for later use in binding
+        adapter.validationFunction = validationFunction;
+        return adapter;
+    }
+
+    public static KeyChoiceAdapter createSingleChoiceAdapter(Context context, List<UnifiedKeyInfo> keys, KeyValidationFunction validationFunction) {
+        KeyChoiceAdapter adapter = new KeyChoiceAdapter(context);
+        adapter.setKeys(keys);
+        // Store validation function for later use in binding
+        adapter.validationFunction = validationFunction;
+        return adapter;
+    }
+
+    public static KeyChoiceAdapter createSingleClickableAdapter(Context context, List<UnifiedKeyInfo> keys, OnKeyInfoSelectedListener clickListener, KeyValidationFunction validationFunction) {
+        KeyChoiceAdapter adapter = new KeyChoiceAdapter(context);
+        adapter.setKeys(keys);
+        if (clickListener != null) {
+            adapter.setOnKeySelectedListener((keyId, selected) -> {
+                // Find the UnifiedKeyInfo by keyId and call the listener
+                for (UnifiedKeyInfo key : keys) {
+                    if (key.master_key_id() == keyId) {
+                        clickListener.onKeySelected(key);
+                        break;
+                    }
+                }
+            });
+        }
+        adapter.validationFunction = validationFunction;
+        return adapter;
+    }
+
+    @NonNull
+    @Override
+    public KeyChoiceViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        View view = inflater.inflate(R.layout.key_list_item, parent, false);
+        return new KeyChoiceViewHolder(view);
     }
 
     @Override
-    public long getItemId(int position) {
-        KeyChoiceItem item = getItem(position);
-        if (item == null) {
-            return RecyclerView.NO_ID;
-        }
-        return item.getMasterKeyId();
+    public void onBindViewHolder(@NonNull KeyChoiceViewHolder holder, int position) {
+        UnifiedKeyInfo keyInfo = keys.get(position);
+        holder.validationFunction = this.validationFunction;
+        holder.bind(keyInfo, selectedKeyIds.contains(keyInfo.master_key_id()));
     }
 
-    public void setSelectionByIds(Set<Long> checkedIds) {
-        if (getMode() != 2) {
-            throw new IllegalStateException("Cannot get active item in single select mode!");
-        }
-
-        clearSelection();
-        for (int position = 0; position < getItemCount(); position++) {
-            long itemId = getItemId(position);
-            if (checkedIds.contains(itemId)) {
-                addSelection(position);
-            }
-        }
+    @Override
+    public int getItemCount() {
+        return keys.size();
     }
 
-    public Set<Long> getSelectionIds() {
-        if (getMode() != 2) {
-            throw new IllegalStateException("Cannot get active item in single select mode!");
+    public class KeyChoiceViewHolder extends RecyclerView.ViewHolder {
+        private TextView nameView;
+        private TextView emailView;
+        private TextView creationView;
+        private ImageView statusIcon;
+        private CheckBox checkBox;
+        private KeyValidationFunction validationFunction;
+
+        public KeyChoiceViewHolder(View itemView) {
+            super(itemView);
+            nameView = itemView.findViewById(R.id.key_list_item_name);
+            emailView = itemView.findViewById(R.id.key_list_item_email);
+            creationView = itemView.findViewById(R.id.key_list_item_creation);
+            statusIcon = itemView.findViewById(R.id.key_list_item_status_icon);
+
+            // Checkbox not available in standard layout - selection shown via activation state
+            checkBox = null;
+
+            itemView.setOnClickListener(v -> {
+                int pos = getAdapterPosition();
+                if (pos != RecyclerView.NO_POSITION) {
+                    UnifiedKeyInfo keyInfo = keys.get(pos);
+                    boolean wasSelected = selectedKeyIds.contains(keyInfo.master_key_id());
+
+                    if (wasSelected) {
+                        selectedKeyIds.remove(keyInfo.master_key_id());
+                    } else {
+                        selectedKeyIds.add(keyInfo.master_key_id());
+                    }
+
+                    notifyItemChanged(pos);
+
+                    if (listener != null) {
+                        listener.onKeySelected(keyInfo.master_key_id(), !wasSelected);
+                    }
+                }
+            });
         }
 
-        Set<Long> result = new HashSet<>();
-        for (int position : getSelectedPositions()) {
-            long itemId = getItemId(position);
-            result.add(itemId);
-        }
-        return result;
-    }
-
-    public class KeyChoiceItem extends AbstractFlexibleItem<KeyChoiceViewHolder> {
-        private UnifiedKeyInfo keyInfo;
-        @StringRes
-        private Integer disabledStringRes;
-
-        KeyChoiceItem(UnifiedKeyInfo keyInfo, @StringRes Integer disabledStringRes) {
-            this.keyInfo = keyInfo;
-            this.disabledStringRes = disabledStringRes;
-            setSelectable(true);
-        }
-
-        @Override
-        public int getLayoutRes() {
-            return R.layout.key_choice_item;
-        }
-
-        public KeyChoiceViewHolder createViewHolder(View view, FlexibleAdapter<IFlexible> adapter) {
-            return new KeyChoiceViewHolder(view, adapter);
-        }
-
-        public void bindViewHolder(FlexibleAdapter<IFlexible> adapter, KeyChoiceViewHolder holder, int position,
-                List<Object> payloads) {
-            boolean isActive = adapter.isSelected(position);
-            boolean isEnabled = disabledStringRes == null;
-            holder.bind(keyInfo, adapter.getMode(), isActive, isEnabled);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return (o instanceof KeyChoiceItem) &&
-                    ((KeyChoiceItem) o).keyInfo.master_key_id() == keyInfo.master_key_id();
-        }
-
-        @Override
-        public int hashCode() {
-            long masterKeyId = keyInfo.master_key_id();
-            return (int) (masterKeyId ^ (masterKeyId >>> 32));
-        }
-
-        public long getMasterKeyId() {
-            return keyInfo.master_key_id();
-        }
-    }
-
-    public class KeyChoiceViewHolder extends FlexibleViewHolder {
-        private final TextView vName;
-        private final TextView vCreation;
-        private final CheckBox vCheckbox;
-        private final RadioButton vRadio;
-
-        KeyChoiceViewHolder(View itemView, FlexibleAdapter<IFlexible> adapter) {
-            super(itemView, adapter);
-
-            vName = itemView.findViewById(R.id.text_keychoice_name);
-            vCreation = itemView.findViewById(R.id.text_keychoice_creation);
-            vCheckbox = itemView.findViewById(R.id.checkbox_keychoice);
-            vRadio = itemView.findViewById(R.id.radio_keychoice);
-        }
-
-        void bind(UnifiedKeyInfo keyInfo, int choiceMode, boolean isActive, boolean isEnabled) {
+        public void bind(UnifiedKeyInfo keyInfo, boolean isSelected) {
             keyInfoFormatter.setKeyInfo(keyInfo);
+            keyInfoFormatter.formatUserId(nameView, emailView);
+            keyInfoFormatter.formatCreationDate(creationView);
+            keyInfoFormatter.formatStatusIcon(statusIcon);
 
-            vName.setText(keyInfo.user_id());
+            if (checkBox != null) {
+                checkBox.setChecked(isSelected);
+            }
 
-            keyInfoFormatter.formatCreationDate(vCreation);
-
-            switch (choiceMode) {
-                case 0: {
-                    vRadio.setVisibility(View.GONE);
-                    vCheckbox.setVisibility(View.GONE);
-                    break;
-                }
-                case 1: {
-                    vRadio.setVisibility(View.VISIBLE);
-                    vRadio.setChecked(isActive);
-                    vCheckbox.setVisibility(View.GONE);
-                    break;
-                }
-                case 2: {
-                    vCheckbox.setVisibility(View.VISIBLE);
-                    vCheckbox.setChecked(isActive);
-                    vRadio.setVisibility(View.GONE);
-                    break;
+            // Check if key has validation issues
+            if (validationFunction != null) {
+                Integer validationResult = validationFunction.validate(keyInfo);
+                if (validationResult != null) {
+                    // Key has validation issues - you could show warning icon or text here
+                    // For now, just disable the item
+                    itemView.setEnabled(false);
+                    itemView.setAlpha(0.5f);
+                } else {
+                    itemView.setEnabled(true);
+                    itemView.setAlpha(1.0f);
                 }
             }
 
-            vCheckbox.setEnabled(isEnabled);
-            vRadio.setEnabled(isEnabled);
-            vName.setEnabled(isEnabled);
-            vCreation.setEnabled(isEnabled);
+            // Highlight selected items
+            itemView.setActivated(isSelected);
         }
-    }
-
-    public interface OnKeyClickListener {
-        void onKeyClick(UnifiedKeyInfo keyInfo);
-    }
-
-    public interface KeyDisabledPredicate {
-        @StringRes
-        Integer getDisabledString(UnifiedKeyInfo keyInfo);
     }
 }

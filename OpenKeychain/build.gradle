@@ -32,8 +32,7 @@ dependencies {
     implementation 'com.nispok:snackbar:2.11.0'
     implementation 'com.cocosw:bottomsheet:1.5.0@aar'
 
-    // RecyclerView
-    implementation 'com.github.shymmq:FlexibleAdapter:5.0.0-rc1'
+    // RecyclerView - using standard Android RecyclerView
 
     //implementation 'eu.davidea:flexible-adapter-ui:1.0.0-b5'
     //implementation 'eu.davidea:flexible-adapter-livedata:1.0.0-b2'
