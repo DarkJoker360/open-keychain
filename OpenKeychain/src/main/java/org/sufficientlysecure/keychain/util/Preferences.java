@@ -141,6 +141,16 @@ public class Preferences {
         editor.commit();
     }
 
+    public boolean getSshAgentEnabled() {
+        return mSharedPreferences.getBoolean(Constants.Pref.SSH_AGENT_ENABLED, false);
+    }
+
+    public void setSshAgentEnabled(boolean value) {
+        SharedPreferences.Editor editor = mSharedPreferences.edit();
+        editor.putBoolean(Constants.Pref.SSH_AGENT_ENABLED, value);
+        editor.commit();
+    }
+
     public ArrayList<HkpKeyserverAddress> getKeyServers() {
         String rawData = mSharedPreferences.getString(Constants.Pref.KEY_SERVERS,
                 Constants.Defaults.KEY_SERVERS);

@@ -31,6 +31,7 @@
     <string name="title_certify_key">"Confirm Key"</string>
     <string name="title_key_details">"Key Details"</string>
     <string name="title_help">"Help"</string>
+    <string name="title_ssh_agent_setup">"SSH Agent Setup"</string>
     <string name="title_log_display">"Log"</string>
     <string name="title_advanced_key_info">"Advanced"</string>
     <string name="title_delete_secret_key">"Delete YOUR key '%s'?"</string>
@@ -55,6 +56,11 @@
     <string name="section_fingerprint">"Fingerprint"</string>
     <string name="section_encrypt">"Encrypt"</string>
     <string name="section_decrypt">"Decrypt/Verify"</string>
+    <string name="section_ssh_authentication">"SSH Authentication"</string>
+    <string name="section_about_ssh">"About"</string>
+    <string name="section_ssh_agent">"SSH Agent"</string>
+    <string name="section_ssh_keys">"SSH Keys"</string>
+    <string name="section_about_ssh_agent">"About SSH Agent"</string>
     <string name="section_current_expiry">"Current expiry"</string>
     <string name="section_new_expiry">"New expiry"</string>
 
@@ -83,6 +89,11 @@
     <string name="btn_decrypt_files">"Select input file"</string>
     <string name="btn_encrypt_files">"Encrypt files"</string>
     <string name="btn_encrypt_text">"Encrypt text"</string>
+    <string name="btn_ssh_agent_setup">"SSH Agent Setup"</string>
+    <string name="btn_ssh_key_management">"SSH Key Management"</string>
+    <string name="btn_ssh_connections">"SSH Connections"</string>
+    <string name="btn_ssh_generate_keys">"Generate SSH Keys"</string>
+    <string name="btn_ssh_configure_keys">"Configure SSH Keys"</string>
     <string name="btn_add_email">"Add additional email address"</string>
     <string name="btn_unlock">"Unlock"</string>
     <string name="btn_proceed">"Proceed"</string>
@@ -174,6 +185,33 @@
 
     <string name="label_experimental_settings_desc_title">"Warning"</string>
     <string name="label_experimental_settings_desc_summary">"These features are not yet finished or results of user experience/security research. Thus, don't rely on their security and please don't report issues you encounter!"</string>
+    <string name="desc_ssh_authentication">"Use your OpenKeychain keys for SSH authentication. Set up SSH agent functionality, manage SSH keys, and monitor active connections to remote servers."</string>
+    <string name="desc_ssh_agent_setup">"Configure SSH agent to use your OpenKeychain keys for secure authentication with remote servers. This allows you to use your existing PGP keys for SSH connections."</string>
+    <string name="ssh_agent_enable_title">"Enable SSH Agent"</string>
+    <string name="ssh_agent_status_enabled">"SSH Agent is enabled and ready to authenticate SSH connections using your OpenKeychain keys."</string>
+    <string name="ssh_agent_status_disabled">"SSH Agent is disabled. Enable it to use your keys for SSH authentication."</string>
+    <string name="provider_status">"Provider Status"</string>
+    <string name="provider_available">"OpenKeychain is available"</string>
+    <string name="gpg_key_selection">"GPG Key"</string>
+    <string name="btn_select">"Select"</string>
+    <string name="no_gpg_key_selected">"No GPG key selected. Tap Select to choose a key."</string>
+    <string name="ssh_keys">"SSH Keys"</string>
+    <string name="btn_add">"Add"</string>
+    <string name="no_ssh_keys_added">"No SSH keys added yet. Tap Add to add your first SSH key."</string>
+    <string name="ssh_agent_enabled">"SSH Agent Enabled"</string>
+    <string name="btn_settings">"Settings"</string>
+    <string name="drag_to_reorder">"Drag to reorder"</string>
+    <string name="remove_ssh_key">"Remove SSH key"</string>
+    <string name="title_add_ssh_key">"Add SSH Key"</string>
+    <string name="ssh_key_name_hint">"Key name (e.g., My Laptop Key)"</string>
+    <string name="ssh_public_key_hint">"SSH Public Key (required)"</string>
+    <string name="ssh_private_key_hint">"SSH Private Key (optional)"</string>
+    <string name="ssh_key_help_text">"Paste your SSH public key. Private key is optional but required for signing operations."</string>
+    <string name="btn_cancel">"Cancel"</string>
+    <string name="btn_save_ssh_key">"Save"</string>
+    <string name="error_ssh_key_name_required">"Key name is required"</string>
+    <string name="error_ssh_public_key_required">"SSH public key is required"</string>
+    <string name="error_invalid_ssh_key_format">"Invalid SSH key format"</string>
 
     <string name="label_experimental_settings_theme_summary">"(The icons and many screens are not yet adjusted accordingly for the dark theme)"</string>
 
@@ -635,6 +673,10 @@
     <!-- Navigation Drawer -->
     <string name="nav_keys">"Keys"</string>
     <string name="nav_encrypt_decrypt">"Encrypt/Decrypt"</string>
+    <string name="nav_authentication">"Authentication"</string>
+    <string name="authentication_keys">"Authentication Keys"</string>
+    <string name="no_keys_added">"No authentication keys added yet. Tap + to add a key."</string>
+    <string name="remove_key">"Remove Key"</string>
     <string name="nav_apps">"Apps"</string>
     <string name="my_keys">"My Keys"</string>
     <string name="nav_backup">"Backup/Restore"</string>

@@ -120,6 +120,7 @@ public final class Constants {
         public static final String FIRST_TIME_APP = "firstTimeApp";
         public static final String CACHED_CONSOLIDATE = "cachedConsolidate";
         public static final String SEARCH_KEYSERVER = "search_keyserver_pref";
+        public static final String SSH_AGENT_ENABLED = "sshAgentEnabled";
         public static final String SEARCH_WEB_KEY_DIRECTORY = "search_wkd_pref";
         public static final String USE_NUMKEYPAD_FOR_SECURITY_TOKEN_PIN = "useNumKeypadForYubikeyPin";
         public static final String ENCRYPT_FILENAMES = "encryptFilenames";

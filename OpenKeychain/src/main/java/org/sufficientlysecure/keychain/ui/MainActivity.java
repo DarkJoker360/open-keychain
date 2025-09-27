@@ -46,8 +46,9 @@ public class MainActivity extends BaseSecurityTokenActivity implements FabContai
 
     static final int ID_KEYS = 1;
     static final int ID_ENCRYPT_DECRYPT = 2;
-    static final int ID_APPS = 3;
-    static final int ID_BACKUP = 4;
+    static final int ID_AUTHENTICATION = 3;
+    static final int ID_APPS = 4;
+    static final int ID_BACKUP = 5;
     static final int ID_SETTINGS = 6;
     static final int ID_HELP = 7;
 
@@ -71,6 +72,8 @@ public class MainActivity extends BaseSecurityTokenActivity implements FabContai
                                 .withIdentifier(ID_KEYS).withSelectable(false),
                         new PrimaryDrawerItem().withName(R.string.nav_encrypt_decrypt).withIcon(FontAwesome.Icon.faw_lock)
                                 .withIdentifier(ID_ENCRYPT_DECRYPT).withSelectable(false),
+                        new PrimaryDrawerItem().withName(R.string.nav_authentication).withIcon(CommunityMaterial.Icon.cmd_account_key)
+                                .withIdentifier(ID_AUTHENTICATION).withSelectable(false),
                         new PrimaryDrawerItem().withName(R.string.title_api_registered_apps).withIcon(CommunityMaterial.Icon.cmd_apps)
                                 .withIdentifier(ID_APPS).withSelectable(false),
                         new PrimaryDrawerItem().withName(R.string.nav_backup).withIcon(CommunityMaterial.Icon.cmd_backup_restore)
@@ -91,6 +94,9 @@ public class MainActivity extends BaseSecurityTokenActivity implements FabContai
                                     break;
                                 case ID_ENCRYPT_DECRYPT:
                                     onEnDecryptSelected();
+                                    break;
+                                case ID_AUTHENTICATION:
+                                    onAuthenticationSelected();
                                     break;
                                 case ID_APPS:
                                     onAppsSelected();
@@ -147,6 +153,9 @@ public class MainActivity extends BaseSecurityTokenActivity implements FabContai
                 case ID_ENCRYPT_DECRYPT:
                     onEnDecryptSelected();
                     break;
+                case ID_AUTHENTICATION:
+                    onAuthenticationSelected();
+                    break;
                 case ID_APPS:
                     onAppsSelected();
                     break;
@@ -185,6 +194,9 @@ public class MainActivity extends BaseSecurityTokenActivity implements FabContai
                 case ID_ENCRYPT_DECRYPT:
                     onEnDecryptSelected();
                     break;
+                case ID_AUTHENTICATION:
+                    onAuthenticationSelected();
+                    break;
                 case ID_APPS:
                     onAppsSelected();
                     break;
@@ -212,6 +224,13 @@ public class MainActivity extends BaseSecurityTokenActivity implements FabContai
         mToolbar.setTitle(R.string.nav_encrypt_decrypt);
         mDrawer.setSelection(ID_ENCRYPT_DECRYPT, false);
         Fragment frag = new EncryptDecryptFragment();
+        setFragment(frag);
+    }
+
+    private void onAuthenticationSelected() {
+        mToolbar.setTitle(R.string.nav_authentication);
+        mDrawer.setSelection(ID_AUTHENTICATION, false);
+        Fragment frag = new AuthenticationFragment();
         setFragment(frag);
     }
 
