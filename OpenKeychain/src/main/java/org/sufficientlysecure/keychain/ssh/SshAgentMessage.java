@@ -24,88 +24,82 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
 public class SshAgentMessage {
 
     // SSH Agent protocol message types
-    public static final byte SSH_AGENTC_REQUEST_IDENTITIES = 11;
-    public static final byte SSH_AGENT_IDENTITIES_ANSWER = 12;
-    public static final byte SSH_AGENTC_SIGN_REQUEST = 13;
-    public static final byte SSH_AGENT_SIGN_RESPONSE = 14;
-    public static final byte SSH_AGENT_FAILURE = 5;
-    public static final byte SSH_AGENT_SUCCESS = 6;
+    public static final int SSH_AGENT_FAILURE = 5;
+    public static final int SSH_AGENTC_REQUEST_IDENTITIES = 11;
+    public static final int SSH_AGENT_IDENTITIES_ANSWER = 12;
+    public static final int SSH_AGENTC_SIGN_REQUEST = 13;
+    public static final int SSH_AGENT_SIGN_RESPONSE = 14;
 
-    private final byte messageType;
-    private final byte[] payload;
+    private final int type;
+    private final byte[] contents;
 
-    public SshAgentMessage(byte messageType, byte[] payload) {
-        this.messageType = messageType;
-        this.payload = payload != null ? payload : new byte[0];
+    public SshAgentMessage(int type, byte[] contents) {
+        this.type = type;
+        this.contents = contents;
     }
 
+    public int getType() {
+        return type;
+    }
+
+    public byte[] getContents() {
+        return contents;
+    }
+
+    // Legacy compatibility
     public byte getMessageType() {
-        return messageType;
+        return (byte) type;
     }
 
     public byte[] getPayload() {
-        return payload;
+        return contents;
     }
 
-    public static SshAgentMessage readFromStream(InputStream inputStream) throws IOException {
-        // Read message length (4 bytes, big-endian)
-        byte[] lengthBytes = new byte[4];
-        int bytesRead = 0;
-        while (bytesRead < 4) {
-            int result = inputStream.read(lengthBytes, bytesRead, 4 - bytesRead);
-            if (result == -1) {
-                return null; // End of stream
+    public static SshAgentMessage readFromStream(InputStream stream) throws IOException {
+        byte[] lengthBytes = Utils.readExact(stream, Integer.BYTES);
+        if (lengthBytes == null) {
+            return null;
+        }
+
+        ByteBuffer lenBuf = ByteBuffer.wrap(lengthBytes);
+        lenBuf.order(ByteOrder.BIG_ENDIAN);
+        int len = lenBuf.getInt();
+
+        int typeInt = stream.read();
+        if (typeInt == -1) {
+            throw new java.io.EOFException();
+        }
+
+        byte[] contents = null;
+        if (len > 1) {
+            contents = Utils.readExact(stream, len - 1);
+            if (contents == null) {
+                throw new java.io.EOFException();
             }
-            bytesRead += result;
         }
 
-        int messageLength = ByteBuffer.wrap(lengthBytes).getInt();
-        if (messageLength <= 0 || messageLength > 1024 * 1024) { // 1MB max
-            throw new IOException("Invalid SSH agent message length: " + messageLength);
-        }
-
-        // Read message type (1 byte)
-        int messageTypeByte = inputStream.read();
-        if (messageTypeByte == -1) {
-            throw new IOException("Unexpected end of stream reading message type");
-        }
-
-        // Read payload (remaining bytes)
-        byte[] payload = new byte[messageLength - 1];
-        bytesRead = 0;
-        while (bytesRead < payload.length) {
-            int result = inputStream.read(payload, bytesRead, payload.length - bytesRead);
-            if (result == -1) {
-                throw new IOException("Unexpected end of stream reading payload");
-            }
-            bytesRead += result;
-        }
-
-        Timber.d("SSH Agent: Read message type %d, payload length %d", messageTypeByte, payload.length);
-        return new SshAgentMessage((byte) messageTypeByte, payload);
+        return new SshAgentMessage(typeInt, contents);
     }
 
-    public void writeToStream(OutputStream outputStream) throws IOException {
-        // Calculate total message length (type + payload)
-        int totalLength = 1 + payload.length;
+    public void writeToStream(OutputStream stream) throws IOException {
+        int bufSize = Integer.BYTES + 1 + (contents != null ? contents.length : 0);
 
-        // Write length (4 bytes, big-endian)
-        ByteBuffer lengthBuffer = ByteBuffer.allocate(4);
-        lengthBuffer.putInt(totalLength);
-        outputStream.write(lengthBuffer.array());
+        ByteBuffer buf = ByteBuffer.allocate(bufSize);
+        buf.order(ByteOrder.BIG_ENDIAN);
+        buf.putInt(bufSize - Integer.BYTES);
+        buf.put((byte) type);
+        if (contents != null) {
+            buf.put(contents);
+        }
 
-        // Write message type
-        outputStream.write(messageType);
-
-        // Write payload
-        outputStream.write(payload);
-
-        Timber.d("SSH Agent: Wrote message type %d, payload length %d", messageType, payload.length);
+        stream.write(buf.array());
+        stream.flush();
     }
 
     public static class Builder {
@@ -113,6 +107,7 @@ public class SshAgentMessage {
 
         public Builder writeInt(int value) {
             ByteBuffer intBuffer = ByteBuffer.allocate(4);
+            intBuffer.order(ByteOrder.BIG_ENDIAN);
             intBuffer.putInt(value);
             try {
                 buffer.write(intBuffer.array());
@@ -148,7 +143,7 @@ public class SshAgentMessage {
             return this;
         }
 
-        public SshAgentMessage build(byte messageType) {
+        public SshAgentMessage build(int messageType) {
             return new SshAgentMessage(messageType, buffer.toByteArray());
         }
     }
@@ -211,6 +206,7 @@ public class SshAgentMessage {
 
         public void writeInt(int value) {
             ByteBuffer intBuffer = ByteBuffer.allocate(4);
+            intBuffer.order(ByteOrder.BIG_ENDIAN);
             intBuffer.putInt(value);
             try {
                 buffer.write(intBuffer.array());
@@ -250,6 +246,7 @@ public class SshAgentMessage {
             try {
                 // Write message length (4 bytes)
                 ByteBuffer lengthBuffer = ByteBuffer.allocate(4);
+                lengthBuffer.order(ByteOrder.BIG_ENDIAN);
                 lengthBuffer.putInt(payload.length);
                 message.write(lengthBuffer.array());
 

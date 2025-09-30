@@ -1,0 +1,72 @@
+/*
+ * Copyright (C) 2017 Schürmann & Breitmoser GbR
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package org.sufficientlysecure.keychain.ssh;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.List;
+
+/**
+ * SSH identities response for SSH agent protocol
+ */
+public class SshIdentitiesResponse {
+    private final List<SshPublicKeyInfo> keys;
+
+    public SshIdentitiesResponse(List<SshPublicKeyInfo> keys) {
+        this.keys = keys;
+    }
+
+    public byte[] toBytes() {
+        try {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+            // Write number of keys
+            ByteBuffer countBuf = ByteBuffer.allocate(4);
+            countBuf.order(ByteOrder.BIG_ENDIAN);
+            countBuf.putInt(keys.size());
+            buffer.write(countBuf.array());
+
+            // Write each key
+            for (SshPublicKeyInfo key : keys) {
+                // Write public key blob length
+                ByteBuffer keyLenBuf = ByteBuffer.allocate(4);
+                keyLenBuf.order(ByteOrder.BIG_ENDIAN);
+                keyLenBuf.putInt(key.getPublicKey().length);
+                buffer.write(keyLenBuf.array());
+
+                // Write public key blob
+                buffer.write(key.getPublicKey());
+
+                // Write comment length
+                ByteBuffer commentLenBuf = ByteBuffer.allocate(4);
+                commentLenBuf.order(ByteOrder.BIG_ENDIAN);
+                commentLenBuf.putInt(key.getComment().length);
+                buffer.write(commentLenBuf.array());
+
+                // Write comment
+                buffer.write(key.getComment());
+            }
+
+            return buffer.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("Error creating SSH identities response", e);
+        }
+    }
+}

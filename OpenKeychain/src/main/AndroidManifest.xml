@@ -72,6 +72,7 @@
     <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
 
     <!-- android:allowBackup="false": Don't allow backup over adb backup or other apps! -->
     <application
@@ -963,7 +964,7 @@
             android:enabled="true"
             android:exported="true"
             android:process=":remote_api"
-            android:foregroundServiceType="specialUse"
+            android:foregroundServiceType="connectedDevice"
             tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="org.openintents.openpgp.IOpenPgpService" />
@@ -977,7 +978,7 @@
             android:enabled="true"
             android:exported="true"
             android:process=":remote_api_2"
-            android:foregroundServiceType="specialUse"
+            android:foregroundServiceType="connectedDevice"
             tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="org.openintents.openpgp.IOpenPgpService2" />
@@ -991,7 +992,7 @@
             android:enabled="true"
             android:exported="true"
             android:process=":remote_ssh_api"
-            android:foregroundServiceType="specialUse"
+            android:foregroundServiceType="connectedDevice"
             tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="org.openintents.ssh.authentication.ISshAuthenticationService" />
@@ -1003,7 +1004,7 @@
             android:name=".ssh.SshAgentService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="specialUse">
+            android:foregroundServiceType="connectedDevice">
         </service>
 
         <!-- SSH Agent Broadcast Receiver for external tool discovery -->
@@ -1015,6 +1016,15 @@
                 <action android:name="org.sufficientlysecure.keychain.action.SSH_AGENT_REQUEST" />
             </intent-filter>
         </receiver>
+
+        <!-- Intent Runner Activity for handling user interaction during SSH operations -->
+        <activity
+            android:name=".ssh.IntentRunnerActivity"
+            android:enabled="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:theme="@style/Theme.AppCompat.Dialog">
+        </activity>
 
         <!-- Storage Provider for temporary decrypted files.
              For security considerations, read class! -->

@@ -1626,4 +1626,14 @@
     <string name="share_key_clipboard">Share key via clipboard</string>
     <string name="share_key">Share key</string>
 
+    <!-- SSH Agent strings -->
+    <string name="notification_ssh_title">SSH Agent</string>
+    <string name="notification_ssh_content">SSH Agent is running</string>
+    <string name="text_terminate">Terminate</string>
+    <string name="error_connection_failed">Connection failed</string>
+    <string name="error_api_not_accessible">API not accessible</string>
+    <string name="waiting_for_ssh_authentication">Waiting for authentication...</string>
+    <string name="notification_ssh_auth_title">SSH Authentication Required</string>
+    <string name="notification_ssh_auth_content">Tap to authenticate SSH request</string>
+
 </resources>
