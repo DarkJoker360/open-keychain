@@ -271,40 +271,6 @@ public abstract class AgentService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d("AGENT_SERVICE", "=== onStartCommand called ===");
 
-        // On Android 12+ (API 31+), we can only call startForeground() if the service was
-        // started with startForegroundService(). If it was started with regular startService()
-        // (which happens when we can't start from background), skip the foreground promotion.
-        boolean shouldGoForeground = true;
-        if (Build.VERSION.SDK_INT >= 31) {
-            // Check if we can go foreground - if not, run as regular background service
-            try {
-                int notificationId = getResources().getInteger(R.integer.notification_id_ssh);
-                android.app.Notification notification = createNotification();
-                Log.d("AGENT_SERVICE", "Attempting foreground with notification ID: " + notificationId);
-                startForeground(notificationId, notification);
-                Log.d("AGENT_SERVICE", "Service started in foreground successfully");
-            } catch (Exception e) {
-                // This is expected on Android 12+ when started with startService()
-                Log.w("AGENT_SERVICE", "Cannot go foreground on Android 12+ (expected): " + e.getMessage());
-                // Continue running as background service - Android allows short-lived background services
-                shouldGoForeground = false;
-            }
-        } else {
-            // Android 11 and below - always go foreground
-            try {
-                int notificationId = getResources().getInteger(R.integer.notification_id_ssh);
-                android.app.Notification notification = createNotification();
-                Log.d("AGENT_SERVICE", "Starting foreground with notification ID: " + notificationId);
-                startForeground(notificationId, notification);
-                Log.d("AGENT_SERVICE", "Service started in foreground successfully");
-            } catch (Exception e) {
-                Log.e("AGENT_SERVICE", "Failed to start foreground service: " + e.getMessage(), e);
-                // On older Android, if we can't go foreground, we must stop
-                stopSelf();
-                return START_NOT_STICKY;
-            }
-        }
-
         if (intent == null) {
             Log.w("AGENT_SERVICE", "Intent is null");
             return START_NOT_STICKY;

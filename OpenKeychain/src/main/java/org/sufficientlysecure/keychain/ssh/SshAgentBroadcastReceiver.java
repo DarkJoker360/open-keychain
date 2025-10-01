@@ -86,39 +86,17 @@ public class SshAgentBroadcastReceiver extends BroadcastReceiver {
             try {
                 Log.d("SSH_BROADCAST", "Starting SSH agent service...");
 
-                // On Android 12+ (API 31+), there are strict limitations on starting foreground services
-                // from background. The service can only be started if:
-                // 1. App is in foreground
-                // 2. App has a visible notification
-                // 3. Service is already running
-                // Since we're receiving a broadcast, we're likely in background
-                if (android.os.Build.VERSION.SDK_INT >= 31) {
-                    // Android 12+ - Try to start the service, but be prepared for failure
-                    try {
-                        context.startForegroundService(serviceIntent);
-                        Log.d("SSH_BROADCAST", "SSH agent service started (foreground) for port: " + proxyPort);
-                    } catch (Exception fgException) {
-                        // This is expected on Android 12+ when app is in background
-                        Log.w("SSH_BROADCAST", "Cannot start foreground service from background (Android 12+), trying regular start");
-                        try {
-                            // Try regular start - this might work if service is already running
-                            context.startService(serviceIntent);
-                            Log.d("SSH_BROADCAST", "SSH agent service started (regular) for port: " + proxyPort);
-                        } catch (Exception regException) {
-                            Log.e("SSH_BROADCAST", "Both foreground and regular start failed: " + regException.getMessage());
-                            // Last resort: Show notification to user
-                            Utils.showError(context, "Please open OpenKeychain first, then retry SSH");
-                            return;
-                        }
-                    }
-                } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    // Android 8.0-11 - Can use startForegroundService normally
+                // Always use startForegroundService for Android 8.0+
+                // The connectedDevice foreground service type allows starting from broadcasts
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    // Android 8.0+ - Use startForegroundService
+                    // With connectedDevice type, this should work even from background
                     context.startForegroundService(serviceIntent);
-                    Log.d("SSH_BROADCAST", "SSH agent service started successfully for proxy port: " + proxyPort);
+                    Log.d("SSH_BROADCAST", "SSH agent service started (foreground/connectedDevice) for port: " + proxyPort);
                 } else {
                     // Android 7.1 and below
                     context.startService(serviceIntent);
-                    Log.d("SSH_BROADCAST", "SSH agent service started successfully for proxy port: " + proxyPort);
+                    Log.d("SSH_BROADCAST", "SSH agent service started for proxy port: " + proxyPort);
                 }
 
                 Timber.d("Started SSH agent service for proxy port: %d", proxyPort);
