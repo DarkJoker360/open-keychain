@@ -32,6 +32,8 @@ import android.os.IBinder;
 
 import org.bouncycastle.bcpg.HashAlgorithmTags;
 import org.bouncycastle.bcpg.PublicKeyAlgorithmTags;
+import org.openintents.openpgp.OpenPgpError;
+import org.openintents.openpgp.util.OpenPgpApi;
 import org.openintents.ssh.authentication.ISshAuthenticationService;
 import org.openintents.ssh.authentication.SshAuthenticationApi;
 import org.openintents.ssh.authentication.SshAuthenticationApiError;
@@ -94,17 +96,22 @@ public class SshAuthenticationService extends Service {
     }
 
     private Intent checkIntent(Intent intent) {
+        android.util.Log.d("SSH_AUTH_SVC", "checkIntent called, action: " + (intent != null ? intent.getAction() : "null"));
         Intent errorResult = checkRequirements(intent);
         if (errorResult == null) {
+            android.util.Log.d("SSH_AUTH_SVC", "checkRequirements passed, calling executeInternal");
             return executeInternal(intent);
         } else {
+            android.util.Log.e("SSH_AUTH_SVC", "checkRequirements failed, returning error");
             return errorResult;
         }
     }
 
     private Intent executeInternal(Intent intent) {
+        android.util.Log.d("SSH_AUTH_SVC", "executeInternal called, action: " + intent.getAction());
         switch (intent.getAction()) {
             case SshAuthenticationApi.ACTION_SIGN:
+                android.util.Log.d("SSH_AUTH_SVC", "ACTION_SIGN - calling authenticate");
                 return authenticate(intent);
             case SshAuthenticationApi.ACTION_SELECT_KEY:
                 return getAuthenticationKey(intent);
@@ -118,16 +125,21 @@ public class SshAuthenticationService extends Service {
     }
 
     private Intent authenticate(Intent data) {
-        Intent errorIntent = checkForKeyId(data);
-        if (errorIntent != null) {
-            return errorIntent;
-        }
+        android.util.Log.d("SSH_AUTH_SVC", "=== AUTHENTICATE CALLED ===");
+        try {
+            Intent errorIntent = checkForKeyId(data);
+            if (errorIntent != null) {
+                android.util.Log.e("SSH_AUTH_SVC", "checkForKeyId returned error");
+                return errorIntent;
+            }
 
-        // keyid == masterkeyid -> authkeyid
-        // keyId is the pgp master keyId, the keyId used will be the first authentication
-        // key in the keyring designated by the master keyId
-        String keyIdString = data.getStringExtra(SshAuthenticationApi.EXTRA_KEY_ID);
-        long masterKeyId = Long.valueOf(keyIdString);
+            // keyid == masterkeyid -> authkeyid
+            // keyId is the pgp master keyId, the keyId used will be the first authentication
+            // key in the keyring designated by the master keyId
+            String keyIdString = data.getStringExtra(SshAuthenticationApi.EXTRA_KEY_ID);
+            android.util.Log.d("SSH_AUTH_SVC", "Key ID string: " + keyIdString);
+            long masterKeyId = Long.valueOf(keyIdString);
+            android.util.Log.d("SSH_AUTH_SVC", "Master key ID: " + masterKeyId);
 
         int hashAlgorithmTag = getHashAlgorithm(data);
         if (hashAlgorithmTag == HASHALGORITHM_NONE) {
@@ -161,7 +173,18 @@ public class SshAuthenticationService extends Service {
 
         authData.setAuthenticationSubKeyId(authSubKeyId);
 
-        authData.setAllowedAuthenticationKeyIds(getAllowedKeyIds());
+        // When OpenKeychain calls its own SSH authentication service, allow access to all keys
+        // For external callers, check the allowed keys from the database
+        String callingPackage = mApiPermissionHelper.getCurrentCallingPackage();
+        android.util.Log.d("SSH_AUTH_SVC", "Calling package: " + callingPackage);
+        if (callingPackage != null && callingPackage.equals(getPackageName())) {
+            android.util.Log.d("SSH_AUTH_SVC", "Internal call from OpenKeychain, allowing all keys");
+            // Internal call - don't set allowed keys (leaving it null allows all keys)
+            // Don't call setAllowedAuthenticationKeyIds at all - the default null value means "allow all"
+        } else {
+            android.util.Log.d("SSH_AUTH_SVC", "External call, checking allowed keys");
+            authData.setAllowedAuthenticationKeyIds(getAllowedKeyIds());
+        }
 
         authData.setHashAlgorithm(hashAlgorithmTag);
 
@@ -175,16 +198,22 @@ public class SshAuthenticationService extends Service {
                 .createAuthenticationParcel(authData.build(), challenge);
 
         // execute authentication operation!
+        android.util.Log.d("SSH_AUTH_SVC", "Executing authentication operation");
         AuthenticationOperation authOperation = new AuthenticationOperation(this, mKeyRepository);
         AuthenticationResult authResult = authOperation.execute(authData.build(), inputParcel, authParcel);
 
+        android.util.Log.d("SSH_AUTH_SVC", "Authentication result - pending: " + authResult.isPending() + ", success: " + authResult.success());
         if (authResult.isPending()) {
+            android.util.Log.d("SSH_AUTH_SVC", "Authentication requires user interaction");
             RequiredInputParcel requiredInput = authResult.getRequiredInputParcel();
+            android.util.Log.d("SSH_AUTH_SVC", "Required input type: " + (requiredInput != null ? requiredInput.mType : "null"));
             PendingIntent pi = mApiPendingIntentFactory.requiredInputPi(data, requiredInput,
                     authResult.mCryptoInputParcel);
+            android.util.Log.d("SSH_AUTH_SVC", "Created pending intent, returning");
             // return PendingIntent to be executed by client
             return packagePendingIntent(pi);
         } else if (authResult.success()) {
+            android.util.Log.d("SSH_AUTH_SVC", "Authentication successful, converting signature");
             byte[] rawSignature = authResult.getSignature();
             byte[] sshSignature;
             try {
@@ -206,13 +235,30 @@ public class SshAuthenticationService extends Service {
                         throw new NoSuchAlgorithmException("Unknown algorithm");
                 }
             } catch (NoSuchAlgorithmException e) {
+                android.util.Log.e("SSH_AUTH_SVC", "Error converting signature", e);
                 return createExceptionErrorResult(SshAuthenticationApiError.INTERNAL_ERROR,
                         "Error converting signature", e);
             }
-            return new SigningResponse(sshSignature).toIntent();
+            android.util.Log.d("SSH_AUTH_SVC", "Returning SigningResponse with " + sshSignature.length + " byte signature");
+            Intent result = new SigningResponse(sshSignature).toIntent();
+            android.util.Log.d("SSH_AUTH_SVC", "SigningResponse intent result code: " + result.getIntExtra(SshAuthenticationApi.EXTRA_RESULT_CODE, -1));
+            return result;
         } else {
+            android.util.Log.e("SSH_AUTH_SVC", "Authentication failed");
             LogEntryParcel errorMsg = authResult.getLog().getLast();
+            android.util.Log.e("SSH_AUTH_SVC", "Error log type: " + (errorMsg != null ? errorMsg.mType : "null"));
+            android.util.Log.e("SSH_AUTH_SVC", "Error message: " + (errorMsg != null ? getString(errorMsg.mType.getMsgId()) : "null"));
+
+            // Log all entries in the operation log to understand what went wrong
+            for (LogEntryParcel entry : authResult.getLog().toList()) {
+                android.util.Log.d("SSH_AUTH_SVC", "Log entry: " + entry.mType + " - " + getString(entry.mType.getMsgId()));
+            }
+
             return createErrorResult(SshAuthenticationApiError.INTERNAL_ERROR, getString(errorMsg.mType.getMsgId()));
+        }
+        } catch (Exception e) {
+            android.util.Log.e("SSH_AUTH_SVC", "Exception in authenticate: " + e.getClass().getName() + ": " + e.getMessage(), e);
+            return createErrorResult(SshAuthenticationApiError.INTERNAL_ERROR, "Exception: " + e.getMessage());
         }
     }
 
@@ -408,7 +454,22 @@ public class SshAuthenticationService extends Service {
         // check if caller is allowed to access OpenKeychain
         Intent result = mApiPermissionHelper.isAllowedOrReturnIntent(data);
         if (result != null) {
-            return result; // disallowed, redirect to registration
+            // Convert OpenPGP API result codes to SSH API result codes
+            int openPgpResultCode = result.getIntExtra(OpenPgpApi.RESULT_CODE, OpenPgpApi.RESULT_CODE_ERROR);
+
+            if (openPgpResultCode == OpenPgpApi.RESULT_CODE_USER_INTERACTION_REQUIRED) {
+                // Convert to SSH API format
+                PendingIntent pendingIntent = result.getParcelableExtra(OpenPgpApi.RESULT_INTENT);
+                Intent sshResult = new Intent();
+                sshResult.putExtra(SshAuthenticationApi.EXTRA_RESULT_CODE, SshAuthenticationApi.RESULT_CODE_USER_INTERACTION_REQUIRED);
+                sshResult.putExtra(SshAuthenticationApi.EXTRA_PENDING_INTENT, pendingIntent);
+                return sshResult;
+            } else {
+                // Convert error to SSH API format
+                OpenPgpError error = result.getParcelableExtra(OpenPgpApi.RESULT_ERROR);
+                String errorMessage = error != null ? error.getMessage() : "Permission denied";
+                return createErrorResult(SshAuthenticationApiError.GENERIC_ERROR, errorMessage);
+            }
         }
 
         return null;
