@@ -73,38 +73,17 @@ public class SshAgentBroadcastReceiver extends BroadcastReceiver {
 
         Log.d("SSH_BROADCAST", "Protocol version compatible");
 
-        // Start SSH agent service to connect to the proxy port
+        // SIMPLE: Just start the service as a regular background service
         if (proxyPort > 0) {
-            Log.d("SSH_BROADCAST", "Creating SSH agent service intent");
+            Log.d("SSH_BROADCAST", "Starting SSH agent for port: " + proxyPort);
+
             Intent serviceIntent = new Intent(context, SshAgentService.class);
             serviceIntent.setAction(AgentService.ACTION_RUN_AGENT);
             serviceIntent.putExtra(AgentService.EXTRA_PROXY_PORT, proxyPort);
 
-            Log.d("SSH_BROADCAST", "Service intent created with action: " + AgentService.ACTION_RUN_AGENT);
-            Log.d("SSH_BROADCAST", "Service intent proxy port: " + proxyPort);
-
-            try {
-                Log.d("SSH_BROADCAST", "Starting SSH agent service...");
-
-                // Always use startForegroundService for Android 8.0+
-                // The connectedDevice foreground service type allows starting from broadcasts
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    // Android 8.0+ - Use startForegroundService
-                    // With connectedDevice type, this should work even from background
-                    context.startForegroundService(serviceIntent);
-                    Log.d("SSH_BROADCAST", "SSH agent service started (foreground/connectedDevice) for port: " + proxyPort);
-                } else {
-                    // Android 7.1 and below
-                    context.startService(serviceIntent);
-                    Log.d("SSH_BROADCAST", "SSH agent service started for proxy port: " + proxyPort);
-                }
-
-                Timber.d("Started SSH agent service for proxy port: %d", proxyPort);
-            } catch (Exception e) {
-                Log.e("SSH_BROADCAST", "Failed to start SSH agent service: " + e.getMessage(), e);
-                Timber.e(e, "Failed to start SSH agent service");
-                Utils.showError(context, "Failed to start SSH agent: " + e.getMessage());
-            }
+            // Just use regular startService - works for short background tasks
+            context.startService(serviceIntent);
+            Log.d("SSH_BROADCAST", "SSH agent service started for port: " + proxyPort);
         } else {
             Log.w("SSH_BROADCAST", "Invalid proxy port provided: " + proxyPort);
             Timber.w("No valid proxy port provided in SSH agent request");

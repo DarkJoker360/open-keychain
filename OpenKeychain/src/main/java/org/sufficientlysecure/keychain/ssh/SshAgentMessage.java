@@ -31,10 +31,13 @@ public class SshAgentMessage {
 
     // SSH Agent protocol message types
     public static final int SSH_AGENT_FAILURE = 5;
+    public static final int SSH_AGENT_SUCCESS = 6;
     public static final int SSH_AGENTC_REQUEST_IDENTITIES = 11;
     public static final int SSH_AGENT_IDENTITIES_ANSWER = 12;
     public static final int SSH_AGENTC_SIGN_REQUEST = 13;
     public static final int SSH_AGENT_SIGN_RESPONSE = 14;
+    public static final int SSH_AGENTC_EXTENSION = 27;
+    public static final int SSH_AGENT_EXTENSION_FAILURE = 28;
 
     private final int type;
     private final byte[] contents;

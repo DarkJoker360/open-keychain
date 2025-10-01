@@ -219,9 +219,17 @@ public class SshAgentService extends AgentService {
                             }
                             break;
 
+                        case SshAgentMessage.SSH_AGENTC_EXTENSION:
+                            Log.d("SSH_SERVICE", "Processing SSH_AGENTC_EXTENSION");
+                            // Extensions are optional features - we don't support any
+                            // but we should respond with EXTENSION_FAILURE instead of generic FAILURE
+                            // This allows SSH clients to gracefully handle the lack of extension support
+                            resMsg = new SshAgentMessage(SshAgentMessage.SSH_AGENT_EXTENSION_FAILURE, null);
+                            Log.d("SSH_SERVICE", "Responding with SSH_AGENT_EXTENSION_FAILURE for unsupported extension");
+                            break;
+
                         default:
                             Log.w("SSH_SERVICE", "Unsupported SSH agent message type: " + req.getType() + " (0x" + Integer.toHexString(req.getType()) + ")");
-                            Log.w("SSH_SERVICE", "This is likely an SSH extension request (type 27) or other unsupported feature");
                             // Will send SSH_AGENT_FAILURE below
                             break;
                     }
@@ -269,13 +277,9 @@ public class SshAgentService extends AgentService {
     public void onCreate() {
         Log.d("SSH_SERVICE", "=== SSH AGENT SERVICE CREATING ===");
         super.onCreate();
-        // CRITICAL: OkcAgent calls startForeground immediately in onCreate
-        // This MUST happen here, not in onStartCommand, to comply with Android 8+ requirements
-        startForeground(
-            R.string.notification_ssh_title,
-            R.string.notification_ssh_content,
-            R.integer.notification_id_ssh
-        );
+        // Don't try to start foreground - just run as background service
+        // Background services can run for short tasks
+        Log.d("SSH_SERVICE", "Running as background service");
         Log.d("SSH_SERVICE", "=== SSH AGENT SERVICE CREATED ===");
     }
 
