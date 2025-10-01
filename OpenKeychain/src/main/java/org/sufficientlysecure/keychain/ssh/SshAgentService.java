@@ -269,6 +269,13 @@ public class SshAgentService extends AgentService {
     public void onCreate() {
         Log.d("SSH_SERVICE", "=== SSH AGENT SERVICE CREATING ===");
         super.onCreate();
+        // CRITICAL: OkcAgent calls startForeground immediately in onCreate
+        // This MUST happen here, not in onStartCommand, to comply with Android 8+ requirements
+        startForeground(
+            R.string.notification_ssh_title,
+            R.string.notification_ssh_content,
+            R.integer.notification_id_ssh
+        );
         Log.d("SSH_SERVICE", "=== SSH AGENT SERVICE CREATED ===");
     }
 
