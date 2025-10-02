@@ -23,7 +23,6 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.os.Bundle;
-import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -46,8 +45,6 @@ public class IntentRunnerActivity extends AppCompatActivity {
     public static final String EXTRA_CALLBACK_INTENT = "org.sufficientlysecure.keychain.extra.CALLBACK_INTENT";
     public static final String EXTRA_RESULT_INTENT = "org.sufficientlysecure.keychain.extra.RESULT_INTENT";
 
-    private static final String TAG = "IntentRunnerActivity";
-
     public static class RequestsViewModel extends ViewModel {
         public Intent reqIntent = null;
     }
@@ -57,7 +54,6 @@ public class IntentRunnerActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(TAG, "onCreate called with action: " + (getIntent() != null ? getIntent().getAction() : "null"));
 
         setContentView(R.layout.activity_intent_runner);
 
@@ -65,36 +61,32 @@ public class IntentRunnerActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         if (intent == null) {
-            Log.w(TAG, "Intent is null, finishing");
+            Timber.w("Intent is null");
             finish();
             return;
         }
 
         String action = intent.getAction();
         if (ACTION_RUN_PENDING_INTENT.equals(action)) {
-            Log.d(TAG, "ACTION_RUN_PENDING_INTENT received");
             vm.reqIntent = intent;
 
             PendingIntent apiIntent = intent.getParcelableExtra(EXTRA_API_INTENT);
             if (apiIntent == null) {
-                Log.e(TAG, "EXTRA_API_INTENT is null, finishing");
+                Timber.e("API intent is null");
                 finish();
                 return;
             }
 
             try {
-                Log.d(TAG, "Starting PendingIntent");
                 startIntentSenderForResult(apiIntent.getIntentSender(), 0, null, 0, 0, 0);
             } catch (IntentSender.SendIntentException e) {
-                Log.e(TAG, "Failed to start PendingIntent: " + e.getMessage(), e);
-                Timber.e(e, "Failed to start PendingIntent");
+                Timber.e(e, "Failed to start intent");
                 finish();
             }
         } else if (ACTION_FINISH.equals(action)) {
-            Log.d(TAG, "ACTION_FINISH received");
             finish();
         } else {
-            Log.w(TAG, "Unknown action: " + action);
+            Timber.w("Unknown action");
             finish();
         }
     }
@@ -102,7 +94,6 @@ public class IntentRunnerActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.d(TAG, "onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode + ", data=" + (data != null ? "present" : "null"));
 
         Intent resultIntent = (resultCode == Activity.RESULT_OK) ? data : null;
 
@@ -110,14 +101,13 @@ public class IntentRunnerActivity extends AppCompatActivity {
             Intent callbackIntent = vm.reqIntent.getParcelableExtra(EXTRA_CALLBACK_INTENT);
             if (callbackIntent != null) {
                 callbackIntent.putExtra(EXTRA_RESULT_INTENT, resultIntent);
-                Log.d(TAG, "Starting callback service with result");
                 startService(callbackIntent);
             } else {
-                Log.w(TAG, "EXTRA_CALLBACK_INTENT is null");
+                Timber.w("Callback intent is null");
             }
             vm.reqIntent = null;
         } else {
-            Log.w(TAG, "vm.reqIntent is null");
+            Timber.w("Request intent is null");
         }
 
         finish();
@@ -125,10 +115,7 @@ public class IntentRunnerActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        Log.d(TAG, "onDestroy called, isChangingConfigurations=" + isChangingConfigurations());
-
         if (!isChangingConfigurations() && vm.reqIntent != null) {
-            Log.d(TAG, "Activity destroyed without result, sending null callback");
             Intent callbackIntent = vm.reqIntent.getParcelableExtra(EXTRA_CALLBACK_INTENT);
             if (callbackIntent != null) {
                 callbackIntent.putExtra(EXTRA_RESULT_INTENT, (Intent) null);

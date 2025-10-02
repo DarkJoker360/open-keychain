@@ -37,7 +37,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import android.util.Log;
 import timber.log.Timber;
 
 /**
@@ -89,10 +88,10 @@ public abstract class AgentService extends Service {
 
     private void checkServiceExit() {
         if (threadMap.isEmpty()) {
-            Log.d("AGENT_SERVICE", "checkServiceExit: No active threads, stopping service");
+            Timber.d("No active threads, stopping service");
             stopSelf();
         } else {
-            Log.d("AGENT_SERVICE", "checkServiceExit: " + threadMap.size() + " active threads remaining");
+            Timber.d("%d active threads remaining", threadMap.size());
         }
     }
 
@@ -112,31 +111,29 @@ public abstract class AgentService extends Service {
     protected abstract void runAgent(int port, Intent intent);
 
     protected Intent callApi(ApiExecutor executeApi, Intent req, int port, StreamStatus stat) {
-        Log.d("AGENT_SERVICE", "Calling API for port " + port + ", action: " + (req != null ? req.getAction() : "null"));
         Intent reqIntent = req;
         while (true) {
             synchronized (lockObj) {
-                Log.d("AGENT_SERVICE", "Executing API call...");
                 Intent resIntent = executeApi.executeApi(reqIntent);
                 if (resIntent == null) {
-                    Log.e("AGENT_SERVICE", "API call returned null intent");
+                    Timber.e("API call returned null");
                     Utils.showError(this, getString(R.string.error_api_not_accessible));
                     return null;
                 }
 
                 if (stat != null && stat.exception != null) {
-                    Log.e("AGENT_SERVICE", "Stream status exception: " + stat.exception.getMessage(), stat.exception);
+                    Timber.e(stat.exception, "Stream exception");
                     throw new RuntimeException(stat.exception);
                 }
 
                 int resultCode = resIntent.getIntExtra(EXTRA_RESULT_CODE, RESULT_CODE_ERROR);
-                Log.d("AGENT_SERVICE", "API call result code: " + resultCode);
+                Timber.d("API call result code: ");
                 switch (resultCode) {
                     case RESULT_CODE_SUCCESS:
-                        Log.d("AGENT_SERVICE", "API call successful");
+                        Timber.d("API call successful");
                         return resIntent;
                     case RESULT_CODE_USER_INTERACTION_REQUIRED:
-                        Log.d("AGENT_SERVICE", "User interaction required, launching IntentRunnerActivity");
+                        Timber.d("User interaction required, launching IntentRunnerActivity");
                         Timber.d("User interaction required");
 
                         // Create intent to launch IntentRunnerActivity
@@ -154,7 +151,7 @@ public abstract class AgentService extends Service {
 
                         // On Android 10+, show notification instead of directly starting activity
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            Log.d("AGENT_SERVICE", "Android 10+, showing notification for user interaction");
+                            Timber.d("Android 10+, showing notification for user interaction");
                             PendingIntent pi = PendingIntent.getActivity(
                                 this,
                                 port,
@@ -177,29 +174,32 @@ public abstract class AgentService extends Service {
                             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                             notificationManager.notify(port, notification);
                         } else {
-                            Log.d("AGENT_SERVICE", "Starting IntentRunnerActivity directly");
+                            Timber.d("Starting IntentRunnerActivity directly");
                             startActivity(runnerIntent);
                         }
 
                         // Wait for the result from IntentRunnerActivity callback
-                        Log.d("AGENT_SERVICE", "Waiting for user interaction result from queue...");
+                        // Timeout after 5 minutes to prevent indefinite blocking
                         ThreadContext ctx = threadMap.get(port);
                         if (ctx == null) {
-                            Log.e("AGENT_SERVICE", "No thread context found for port " + port);
+                            Timber.e("No thread context found");
                             return null;
                         }
 
                         try {
-                            NullableIntentHolder holder = ctx.queue.take();
-                            reqIntent = holder.intent;
-                            if (reqIntent == null) {
-                                Log.w("AGENT_SERVICE", "User interaction cancelled or failed");
+                            NullableIntentHolder holder = ctx.queue.poll(5, java.util.concurrent.TimeUnit.MINUTES);
+                            if (holder == null) {
+                                Timber.w("User interaction timed out after 5 minutes");
                                 return null;
                             }
-                            Log.d("AGENT_SERVICE", "Got result from user interaction, retrying API call");
+                            reqIntent = holder.intent;
+                            if (reqIntent == null) {
+                                Timber.w("User interaction cancelled");
+                                return null;
+                            }
                             // Continue the while loop to retry with the new intent
                         } catch (InterruptedException e) {
-                            Log.e("AGENT_SERVICE", "Interrupted while waiting for user interaction", e);
+                            Timber.e(e, "Interrupted while waiting");
                             Thread.currentThread().interrupt();
                             return null;
                         }
@@ -207,11 +207,11 @@ public abstract class AgentService extends Service {
 
                     case RESULT_CODE_ERROR:
                         String errorMsg = getErrorMessage(resIntent);
-                        Log.e("AGENT_SERVICE", "API call error: " + (errorMsg != null ? errorMsg : "Unknown error"));
+                        Timber.e("API call error");
                         Utils.showError(this, errorMsg != null ? errorMsg : getString(R.string.error_api_not_accessible));
                         return null;
                     default:
-                        Log.e("AGENT_SERVICE", "Unknown result code: " + resultCode);
+                        Timber.e("Unknown result code");
                         return null;
                 }
             }
@@ -269,58 +269,58 @@ public abstract class AgentService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d("AGENT_SERVICE", "=== onStartCommand called ===");
+        Timber.d("=== onStartCommand called ===");
 
         if (intent == null) {
-            Log.w("AGENT_SERVICE", "Intent is null");
+            Timber.w("Intent is null");
             return START_NOT_STICKY;
         }
 
         int port = intent.getIntExtra(EXTRA_PROXY_PORT, -1);
         String action = intent.getAction();
-        Log.d("AGENT_SERVICE", "Action: " + action + ", Port: " + port + ", StartId: " + startId);
+        Timber.d("Action: ");
 
         if (ACTION_RUN_AGENT.equals(action)) {
-            Log.d("AGENT_SERVICE", "ACTION_RUN_AGENT received for port " + port);
+            Timber.d("ACTION_RUN_AGENT received for port ");
             if (!threadMap.containsKey(port)) {
-                Log.d("AGENT_SERVICE", "Creating new agent thread for port " + port);
+                Timber.d("Creating new agent thread for port ");
                 Thread agentThread = new Thread(() -> {
-                    Log.d("AGENT_SERVICE", "Agent thread starting for port " + port);
+                    Timber.d("Agent thread starting for port ");
                     runAgent(port, intent);
-                    Log.d("AGENT_SERVICE", "Agent thread finished for port " + port);
+                    Timber.d("Agent thread finished for port ");
                 });
                 ArrayBlockingQueue<NullableIntentHolder> queue = new ArrayBlockingQueue<>(1);
                 threadMap.put(port, new ThreadContext(agentThread, queue));
                 agentThread.start();
-                Log.d("AGENT_SERVICE", "Agent thread started for port " + port);
+                Timber.d("Agent thread started");
             } else {
-                Log.w("AGENT_SERVICE", "Thread already exists for port " + port);
+                Timber.w("Thread already exists");
                 checkServiceExit();
             }
         } else if (ACTION_RESULT_CALLBACK.equals(action)) {
-            Log.d("AGENT_SERVICE", "ACTION_RESULT_CALLBACK received for port " + port);
+            Timber.d("ACTION_RESULT_CALLBACK received for port ");
             ThreadContext ctx = threadMap.get(port);
             if (ctx != null) {
                 try {
                     Intent resultIntent = intent.getParcelableExtra(IntentRunnerActivity.EXTRA_RESULT_INTENT);
                     ctx.queue.put(new NullableIntentHolder(resultIntent));
-                    Log.d("AGENT_SERVICE", "Result callback queued for port " + port + ", result=" + (resultIntent != null ? "present" : "null"));
+                    Timber.d("Result callback queued");
                 } catch (InterruptedException e) {
-                    Log.e("AGENT_SERVICE", "Interrupted while queuing result callback", e);
+                    Timber.e(e, "Interrupted while queuing");
                     Thread.currentThread().interrupt();
                 }
             } else {
-                Log.w("AGENT_SERVICE", "No thread context found for port " + port);
+                Timber.w("No thread context found");
                 checkServiceExit();
             }
         } else if (ACTION_TERMINATE_SERVICE.equals(action)) {
-            Log.d("AGENT_SERVICE", "ACTION_TERMINATE_SERVICE received");
+            Timber.d("Terminate service");
             stopSelf();
         } else {
-            Log.w("AGENT_SERVICE", "Unknown action: " + action);
+            Timber.w("Unknown action");
         }
 
-        Log.d("AGENT_SERVICE", "onStartCommand completed, returning START_NOT_STICKY");
+        Timber.d("onStartCommand completed, returning START_NOT_STICKY");
         return START_NOT_STICKY;
     }
 

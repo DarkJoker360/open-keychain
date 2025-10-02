@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-import android.util.Log;
 import timber.log.Timber;
 
 /**
@@ -53,60 +52,49 @@ public class SshAgentService extends AgentService {
 
     @Override
     public void runAgent(int port, Intent intent) {
-        Log.d("SSH_SERVICE", "=== STARTING SSH AGENT ===");
-        Log.d("SSH_SERVICE", "Proxy port: " + port);
-        Log.d("SSH_SERVICE", "Intent action: " + (intent != null ? intent.getAction() : "null"));
+        Timber.d("Starting SSH agent");
 
         Socket socket = null;
         try {
-            Log.d("SSH_SERVICE", "Attempting to connect to proxy server at 127.0.0.1:" + port);
+            Timber.d("Connecting to proxy server");
             socket = new Socket("127.0.0.1", port);
-            Log.d("SSH_SERVICE", "Socket connected successfully to " + socket.getRemoteSocketAddress());
+            socket.setSoTimeout(30000); // 30 second timeout
 
             InputStream input = socket.getInputStream();
             OutputStream output = socket.getOutputStream();
-            Log.d("SSH_SERVICE", "Input/Output streams obtained");
 
             // Load SSH keys from storage
-            Log.d("SSH_SERVICE", "Loading SSH keys from storage");
             AuthenticationKeyStorage authKeyStorage = new AuthenticationKeyStorage(this);
             List<AuthenticationKeyInfo> keys = authKeyStorage.loadSelectedKeys();
-            Log.d("SSH_SERVICE", "Loaded " + keys.size() + " SSH keys");
+            Timber.d("Loaded %d SSH keys", keys.size());
 
             // Connect to SSH API
             Semaphore lock = new Semaphore(0);
             final boolean[] connRes = {false};
 
-            Log.d("SSH_SERVICE", "Creating SSH API connection");
             try (SshApi api = new SshApi(this, (sshApi, res) -> {
-                Log.d("SSH_SERVICE", "SSH API connection result: " + res);
                 if (!res) {
-                    Log.e("SSH_SERVICE", "SSH API connection failed");
+                    Timber.e("SSH API connection failed");
                     Utils.showError(SshAgentService.this, R.string.error_connection_failed);
                 }
                 connRes[0] = res;
                 lock.release();
             })) {
-                Log.d("SSH_SERVICE", "Connecting to SSH API...");
                 api.connect();
-                Log.d("SSH_SERVICE", "Waiting for SSH API connection...");
                 lock.acquire();
-                Log.d("SSH_SERVICE", "SSH API connection completed with result: " + connRes[0]);
 
                 if (!connRes[0]) {
-                    Log.e("SSH_SERVICE", "SSH API connection failed, aborting");
+                    Timber.e("SSH API connection failed");
                     return;
                 }
 
-                Log.d("SSH_SERVICE", "SSH API connected successfully");
+                Timber.d("SSH API connected");
                 ApiExecutor executeApi = api::executeApi;
 
                 // Load all public keys BEFORE entering message loop (OkcAgent style)
                 List<SshPublicKeyInfo> publicKeys = new ArrayList<>();
-                Log.d("SSH_SERVICE", "Loading public keys for " + keys.size() + " authentication keys");
                 for (int keyIndex = 0; keyIndex < keys.size(); keyIndex++) {
                     AuthenticationKeyInfo key = keys.get(keyIndex);
-                    Log.d("SSH_SERVICE", "Processing key " + keyIndex + ": " + key.getName() + " (ID: " + key.getKeyId() + ")");
                     if (key.isGpgKey()) {
                         Intent requestIntent = new SshPublicKeyRequest(String.valueOf(key.getKeyId())).toIntent();
                         Intent resIntent = callApi(executeApi, requestIntent, port, null);
@@ -125,75 +113,56 @@ public class SshAgentService extends AgentService {
                                         description.getBytes(StandardCharsets.UTF_8)
                                     );
                                     publicKeys.add(info);
-                                    Log.d("SSH_SERVICE", "Added SSH public key " + keyIndex + " (" + keyData.length + " bytes)");
                                 }
                             }
                         }
                     }
                 }
-                Log.d("SSH_SERVICE", "Finished loading " + publicKeys.size() + " public keys");
+                Timber.d("Loaded %d public keys", publicKeys.size());
 
                 // Handle SSH agent protocol messages
-                Log.d("SSH_SERVICE", "Starting SSH agent protocol message loop");
-                int messageCount = 0;
                 while (true) {
-                    Log.d("SSH_SERVICE", "Waiting for SSH agent message " + (++messageCount) + "...");
                     SshAgentMessage req = SshAgentMessage.readFromStream(input);
                     if (req == null) {
-                        Log.d("SSH_SERVICE", "Received null message, ending message loop");
                         break;
                     }
 
-                    Log.d("SSH_SERVICE", "Received SSH agent message " + messageCount + ", type: " + req.getType() + " (0x" + Integer.toHexString(req.getType()) + ")");
-                    if (req.getContents() != null) {
-                        Log.d("SSH_SERVICE", "Message has " + req.getContents().length + " bytes of content");
-                    } else {
-                        Log.d("SSH_SERVICE", "Message has no content");
-                    }
+                    Timber.d("Received SSH message type: %d", req.getType());
                     SshAgentMessage resMsg = null;
                     switch (req.getType()) {
                         case SshAgentMessage.SSH_AGENTC_REQUEST_IDENTITIES:
-                            Log.d("SSH_SERVICE", "Processing SSH_AGENTC_REQUEST_IDENTITIES");
-                            Log.d("SSH_SERVICE", "Returning " + publicKeys.size() + " identities");
+                            Timber.d("Request identities");
                             resMsg = new SshAgentMessage(
                                 SshAgentMessage.SSH_AGENT_IDENTITIES_ANSWER,
                                 new SshIdentitiesResponse(publicKeys).toBytes()
                             );
-                            Log.d("SSH_SERVICE", "SSH_AGENT_IDENTITIES_ANSWER message created");
                             break;
 
                         case SshAgentMessage.SSH_AGENTC_SIGN_REQUEST:
-                            Log.d("SSH_SERVICE", "Processing SSH_AGENTC_SIGN_REQUEST");
+                            Timber.d("Sign request");
                             SshSignRequest signReq = new SshSignRequest(req.getContents());
-                            Log.d("SSH_SERVICE", "Sign request - key blob length: " + signReq.getKeyBlob().length + ", data length: " + signReq.getData().length + ", flags: " + signReq.getFlags());
 
                             // Find matching key
                             int keyIndex = -1;
                             for (int i = 0; i < publicKeys.size(); i++) {
                                 if (publicKeys.get(i).publicKeyEquals(signReq.getKeyBlob())) {
                                     keyIndex = i;
-                                    Log.d("SSH_SERVICE", "Found matching key at index " + i);
                                     break;
                                 }
                             }
 
                             if (keyIndex >= 0 && keyIndex < keys.size()) {
                                 String keyId = String.valueOf(keys.get(keyIndex).getKeyId());
-                                Log.d("SSH_SERVICE", "Requesting signature for key ID: " + keyId);
 
                                 // Convert SSH agent flags to hash algorithm
                                 // SSH_AGENT_RSA_SHA2_256 = 0x02, SSH_AGENT_RSA_SHA2_512 = 0x04
                                 int hashAlgorithm;
                                 if ((signReq.getFlags() & 0x04) != 0) {
                                     hashAlgorithm = org.openintents.ssh.authentication.SshAuthenticationApi.SHA512;
-                                    Log.d("SSH_SERVICE", "Using SHA512 hash algorithm from flags");
                                 } else if ((signReq.getFlags() & 0x02) != 0) {
                                     hashAlgorithm = org.openintents.ssh.authentication.SshAuthenticationApi.SHA256;
-                                    Log.d("SSH_SERVICE", "Using SHA256 hash algorithm from flags");
                                 } else {
-                                    // Default to SHA1 for RSA, or SHA256 for ECDSA/EdDSA
                                     hashAlgorithm = org.openintents.ssh.authentication.SshAuthenticationApi.SHA1;
-                                    Log.d("SSH_SERVICE", "Using default SHA1 hash algorithm");
                                 }
 
                                 Intent signIntent = callApi(
@@ -205,82 +174,62 @@ public class SshAgentService extends AgentService {
 
                                 if (signIntent != null) {
                                     byte[] signature = new SigningResponse(signIntent).getSignature();
-                                    Log.d("SSH_SERVICE", "Got signature response (" + signature.length + " bytes)");
+                                    Timber.d("Signature generated");
                                     resMsg = new SshAgentMessage(
                                         SshAgentMessage.SSH_AGENT_SIGN_RESPONSE,
                                         new SshSignResponse(signature).toBytes()
                                     );
-                                    Log.d("SSH_SERVICE", "SSH_AGENT_SIGN_RESPONSE message created");
                                 } else {
-                                    Log.e("SSH_SERVICE", "Failed to get signature from SSH API");
+                                    Timber.e("Failed to get signature");
                                 }
                             } else {
-                                Log.e("SSH_SERVICE", "No matching key found for sign request (keyIndex: " + keyIndex + ", total keys: " + keys.size() + ")");
+                                Timber.e("No matching key found");
                             }
                             break;
 
                         case SshAgentMessage.SSH_AGENTC_EXTENSION:
-                            Log.d("SSH_SERVICE", "Processing SSH_AGENTC_EXTENSION");
                             // Extensions are optional features - we don't support any
-                            // but we should respond with EXTENSION_FAILURE instead of generic FAILURE
-                            // This allows SSH clients to gracefully handle the lack of extension support
                             resMsg = new SshAgentMessage(SshAgentMessage.SSH_AGENT_EXTENSION_FAILURE, null);
-                            Log.d("SSH_SERVICE", "Responding with SSH_AGENT_EXTENSION_FAILURE for unsupported extension");
                             break;
 
                         default:
-                            Log.w("SSH_SERVICE", "Unsupported SSH agent message type: " + req.getType() + " (0x" + Integer.toHexString(req.getType()) + ")");
-                            // Will send SSH_AGENT_FAILURE below
+                            Timber.w("Unsupported SSH message type: %d", req.getType());
                             break;
                     }
 
                     if (resMsg == null) {
-                        Log.w("SSH_SERVICE", "No response message created, sending SSH_AGENT_FAILURE");
                         resMsg = new SshAgentMessage(SshAgentMessage.SSH_AGENT_FAILURE, null);
                     }
 
-                    Log.d("SSH_SERVICE", "Sending response message type: " + resMsg.getType());
                     resMsg.writeToStream(output);
-                    Log.d("SSH_SERVICE", "Response message sent successfully");
                 }
             }
         } catch (Exception e) {
-            Log.e("SSH_SERVICE", "SSH Agent error: " + e.getMessage(), e);
             Timber.e(e, "SSH Agent error");
             try {
                 if (socket != null) {
                     socket.setSoLinger(true, 0);
-                    Log.d("SSH_SERVICE", "Socket linger option set");
                 }
             } catch (Exception e2) {
-                Log.e("SSH_SERVICE", "Failed to set linger option: " + e2.getMessage(), e2);
-                Timber.w(e2, "Failed to set linger option on exception");
+                Timber.w(e2, "Failed to set linger option");
                 Utils.showError(this, e.toString());
             }
         } finally {
             try {
                 if (socket != null) {
                     socket.close();
-                    Log.d("SSH_SERVICE", "Socket closed");
                 }
             } catch (Exception e) {
-                Log.e("SSH_SERVICE", "Failed to close socket: " + e.getMessage(), e);
-                Timber.w(e, "Failed to close socket on exit");
+                Timber.w(e, "Failed to close socket");
             }
-            Log.d("SSH_SERVICE", "Checking thread exit for port " + port);
             checkThreadExit(port);
-            Log.d("SSH_SERVICE", "=== SSH AGENT FINISHED ===");
         }
     }
 
     @Override
     public void onCreate() {
-        Log.d("SSH_SERVICE", "=== SSH AGENT SERVICE CREATING ===");
         super.onCreate();
-        // Don't try to start foreground - just run as background service
-        // Background services can run for short tasks
-        Log.d("SSH_SERVICE", "Running as background service");
-        Log.d("SSH_SERVICE", "=== SSH AGENT SERVICE CREATED ===");
+        Timber.d("SSH Agent service created");
     }
 
 }

@@ -39,6 +39,9 @@ public class SshAgentMessage {
     public static final int SSH_AGENTC_EXTENSION = 27;
     public static final int SSH_AGENT_EXTENSION_FAILURE = 28;
 
+    // Maximum message size: 10MB (prevents memory exhaustion attacks)
+    private static final int MAX_MESSAGE_LENGTH = 10 * 1024 * 1024;
+
     private final int type;
     private final byte[] contents;
 
@@ -73,6 +76,12 @@ public class SshAgentMessage {
         ByteBuffer lenBuf = ByteBuffer.wrap(lengthBytes);
         lenBuf.order(ByteOrder.BIG_ENDIAN);
         int len = lenBuf.getInt();
+
+        // Validate message length to prevent memory exhaustion attacks
+        if (len < 0 || len > MAX_MESSAGE_LENGTH) {
+            Timber.e("Invalid SSH message length: %d (max: %d)", len, MAX_MESSAGE_LENGTH);
+            throw new IOException("Invalid message length: " + len);
+        }
 
         int typeInt = stream.read();
         if (typeInt == -1) {
