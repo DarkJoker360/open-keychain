@@ -506,7 +506,6 @@
             </intent-filter>
         </activity>
         <activity android:name=".ui.QrCodeCaptureActivity" />
-        <activity android:name=".ui.SshAgentSetupActivity" />
         <activity android:name=".ui.AddSshKeyActivity" />
 
         <activity

@@ -60,8 +60,6 @@ public class AuthenticationFragment extends Fragment implements AuthenticationKe
     private Button btnAddKey;
     private RecyclerView keysRecyclerView;
     private TextView noKeysMessage;
-    private Switch sshAgentEnabled;
-    private Button btnSettings;
 
     // Data components
     private SshKeyStorage sshKeyStorage;
@@ -94,8 +92,6 @@ public class AuthenticationFragment extends Fragment implements AuthenticationKe
         btnAddKey = view.findViewById(R.id.btn_add_key);
         keysRecyclerView = view.findViewById(R.id.keys_recycler_view);
         noKeysMessage = view.findViewById(R.id.no_keys_message);
-        sshAgentEnabled = view.findViewById(R.id.ssh_agent_enabled);
-        btnSettings = view.findViewById(R.id.btn_settings);
     }
 
     private void setupRecyclerView() {
@@ -113,29 +109,9 @@ public class AuthenticationFragment extends Fragment implements AuthenticationKe
 
     private void setupClickListeners() {
         btnAddKey.setOnClickListener(v -> addKey());
-        btnSettings.setOnClickListener(v -> openSettings());
-
-        sshAgentEnabled.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            authKeyStorage.setSshAgentEnabled(isChecked);
-
-            if (isChecked) {
-                startSshAgentService();
-            } else {
-                stopSshAgentService();
-            }
-        });
     }
 
     private void loadData() {
-        // Load SSH agent status
-        boolean isEnabled = authKeyStorage.isSshAgentEnabled();
-        sshAgentEnabled.setChecked(isEnabled);
-
-        // Start SSH agent service if enabled
-        if (isEnabled) {
-            startSshAgentService();
-        }
-
         // Load authentication keys
         loadAuthenticationKeys();
     }
@@ -171,11 +147,25 @@ public class AuthenticationFragment extends Fragment implements AuthenticationKe
             return;
         }
 
-        // Filter out keys that are already selected
+        // Filter keys that:
+        // 1. Have authentication capability (has_auth_key)
+        // 2. Are not already selected
+        // 3. Are not revoked or expired
         List<AuthenticationKeyInfo> existingKeys = authKeyAdapter.getAuthenticationKeys();
         List<UnifiedKeyInfo> availableKeys = new ArrayList<>();
 
         for (UnifiedKeyInfo key : keys) {
+            // Check if key has authentication capability
+            if (!key.has_auth_key()) {
+                continue;
+            }
+
+            // Check if key is revoked or expired
+            if (key.is_revoked() || key.is_expired()) {
+                continue;
+            }
+
+            // Check if key is already selected
             boolean alreadySelected = false;
             for (AuthenticationKeyInfo existingKey : existingKeys) {
                 if (existingKey.isGpgKey() && existingKey.getKeyId() == key.master_key_id()) {
@@ -189,7 +179,7 @@ public class AuthenticationFragment extends Fragment implements AuthenticationKe
         }
 
         if (availableKeys.isEmpty()) {
-            Notify.create(getActivity(), "All available keys are already added", Style.OK).show();
+            Notify.create(getActivity(), "No authentication-capable keys available. Keys must have authentication capability and not be revoked or expired.", Style.WARN).show();
             return;
         }
 
@@ -231,21 +221,6 @@ public class AuthenticationFragment extends Fragment implements AuthenticationKe
         Timber.d("Added authentication key: " + authKey.getName());
     }
 
-    private void openSettings() {
-        Intent intent = new Intent(requireContext(), SshAgentSetupActivity.class);
-        startActivity(intent);
-    }
-
-
-    private void startSshAgentService() {
-        Intent intent = new Intent(requireContext(), SshAgentService.class);
-        requireContext().startService(intent);
-    }
-
-    private void stopSshAgentService() {
-        Intent intent = new Intent(requireContext(), SshAgentService.class);
-        requireContext().stopService(intent);
-    }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {

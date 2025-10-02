@@ -57,31 +57,4 @@
 
     </LinearLayout>
 
-    <!-- Bottom Action Bar -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:background="?android:attr/colorPrimary"
-        android:elevation="4dp">
-
-        <Switch
-            android:id="@+id/ssh_agent_enabled"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/ssh_agent_enabled"
-            android:textColor="@android:color/white" />
-
-        <Button
-            android:id="@+id/btn_settings"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/btn_settings"
-            style="@style/Widget.AppCompat.Button.Borderless"
-            android:textColor="@android:color/white" />
-
-    </LinearLayout>
-
 </LinearLayout>
