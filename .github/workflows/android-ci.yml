@@ -133,6 +133,35 @@ jobs:
             **/build/reports/lint-*.xml
           retention-days: 14
 
+  upload-artifacts:
+    name: Upload Build Artifacts
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: OpenKeychain-*
+          path: artifacts
+          merge-multiple: false
+
+      - name: Prepare artifacts for upload
+        run: |
+          mkdir -p builds
+          # Rename files to be more user-friendly
+          find artifacts -name "OpenKeychain-debug.apk" -exec cp {} builds/OpenKeychain-debug-${GITHUB_SHA:0:7}.apk \;
+          find artifacts -name "OpenKeychain-release.apk" -exec cp {} builds/OpenKeychain-release-${GITHUB_SHA:0:7}.apk \;
+          ls -lh builds/
+
+      - name: Upload to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenKeychain-builds
+          path: builds/*.apk
+          retention-days: 90
+
   release:
     name: Create GitHub Release
     needs: [build, test, lint]
