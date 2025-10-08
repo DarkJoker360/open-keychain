@@ -220,6 +220,9 @@ android {
         checkAllWarnings true
         htmlReport true
         htmlOutput file('lint-report.html')
+
+        // Use custom lint configuration file
+        lintConfig file("${project.rootDir}/lint.xml")
     }
 
     buildFeatures {

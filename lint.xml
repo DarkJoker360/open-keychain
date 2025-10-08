@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Suppress ExpiredTargetSdkVersion for external libraries -->
+    <!-- MaterialChipsInput is an external library that we don't control -->
+    <!-- and hasn't been updated to target newer SDK versions -->
+    <issue id="ExpiredTargetSdkVersion" severity="warning">
+        <ignore path="extern/MaterialChipsInput/build.gradle" />
+    </issue>
+</lint>
