@@ -27,7 +27,8 @@
         android:id="@android:id/widget_frame"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone">
+        android:visibility="gone"
+        android:fitsSystemWindows="false">
 
         <!--rebuild functionality of ListFragment -->
         <FrameLayout
@@ -43,7 +44,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:clipToPadding="false"
-                    android:paddingBottom="72dp" />
+                    android:paddingBottom="72dp"
+                    android:fitsSystemWindows="false" />
 
             </RelativeLayout>
 
@@ -137,21 +139,6 @@
 
         </com.getbase.floatingactionbutton.FloatingActionsMenu>
     </RelativeLayout>
-
-    <eu.davidea.fastscroller.FastScroller
-        android:id="@+id/fast_scroller"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:layout_centerHorizontal="true"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentRight="true"
-        app:fastScrollerAutoHideEnabled="true"
-        app:fastScrollerAutoHideDelayInMillis="1000"
-        app:fastScrollerBubblePosition="adjacent"
-        app:fastScrollerBubbleEnabled="true"
-        app:fastScrollerHandleAlwaysVisible="false"
-        app:fastScrollerIgnoreTouchesOutsideHandle="false"
-        tools:visibility="visible" />
 
 </FrameLayout>
 

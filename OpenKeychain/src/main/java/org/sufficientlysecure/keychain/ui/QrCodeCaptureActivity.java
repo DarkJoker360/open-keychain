@@ -22,16 +22,17 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
-import androidx.fragment.app.FragmentActivity;
 import androidx.core.content.ContextCompat;
-import android.view.KeyEvent;
+import androidx.fragment.app.FragmentActivity;
 
 import com.journeyapps.barcodescanner.CaptureManager;
 import com.journeyapps.barcodescanner.CompoundBarcodeView;
 
 import org.sufficientlysecure.keychain.R;
+import org.sufficientlysecure.keychain.ui.util.EdgeToEdgeHelper;
 
 public class QrCodeCaptureActivity extends FragmentActivity {
     private CaptureManager capture;
@@ -41,12 +42,15 @@ public class QrCodeCaptureActivity extends FragmentActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        EdgeToEdgeHelper.enableEdgeToEdge(getWindow());
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.qr_code_capture_activity);
 
         barcodeScannerView = findViewById(R.id.zxing_barcode_scanner);
         barcodeScannerView.setStatusText(getString(R.string.import_qr_code_text));
+
+        EdgeToEdgeHelper.setupForScanner(barcodeScannerView);
 
         if (savedInstanceState != null) {
             init(barcodeScannerView, getIntent(), savedInstanceState);

@@ -45,6 +45,7 @@ import org.sufficientlysecure.keychain.compatibility.AppCompatPreferenceActivity
 import org.sufficientlysecure.keychain.keyimport.HkpKeyserverAddress;
 import org.sufficientlysecure.keychain.keysync.KeyserverSyncManager;
 import org.sufficientlysecure.keychain.network.orbot.OrbotHelper;
+import org.sufficientlysecure.keychain.ui.util.EdgeToEdgeHelper;
 import org.sufficientlysecure.keychain.ui.util.Notify;
 import org.sufficientlysecure.keychain.ui.util.ThemeChanger;
 import org.sufficientlysecure.keychain.util.Preferences;
@@ -65,6 +66,9 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         mThemeChanger = new ThemeChanger(this);
         mThemeChanger.setThemes(R.style.Theme_Keychain_Light, R.style.Theme_Keychain_Dark);
         mThemeChanger.changeTheme();
+
+        EdgeToEdgeHelper.enableEdgeToEdge(getWindow());
+
         super.onCreate(savedInstanceState);
 
         setupToolbar();
@@ -96,6 +100,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         root.addView(toolbarContainer);
 
         Toolbar toolbar = toolbarContainer.findViewById(R.id.toolbar);
+        EdgeToEdgeHelper.setupForToolbar(toolbar);
+        EdgeToEdgeHelper.setupForContainer(content);
 
         toolbar.setTitle(R.string.title_preferences);
         // noinspection deprecation, TODO use alternative in API level 21

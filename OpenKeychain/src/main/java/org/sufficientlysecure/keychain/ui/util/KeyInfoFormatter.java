@@ -36,6 +36,12 @@ public class KeyInfoFormatter {
     }
 
     public void formatUserId(TextView name, TextView email) {
+        if (keyInfo == null) {
+            name.setText("");
+            email.setVisibility(View.GONE);
+            return;
+        }
+
         if (keyInfo.name() == null && keyInfo.email() == null) {
             String readableKeyId = KeyFormattingUtils.beautifyKeyId(keyInfo.master_key_id());
             name.setText(context.getString(R.string.keylist_item_key_id, readableKeyId));
@@ -54,6 +60,11 @@ public class KeyInfoFormatter {
     }
 
     public void formatCreationDate(TextView creationDate) {
+        if (keyInfo == null) {
+            creationDate.setVisibility(View.GONE);
+            return;
+        }
+
         if (keyInfo.has_duplicate() || keyInfo.has_any_secret()) {
             creationDate.setText(getSecretKeyReadableTime(context, keyInfo));
             creationDate.setVisibility(View.VISIBLE);
@@ -63,6 +74,10 @@ public class KeyInfoFormatter {
     }
 
     public void greyInvalidKeys(List<TextView> textviews) {
+        if (keyInfo == null) {
+            return;
+        }
+
         int textColor;
 
         // Note: order is important!
@@ -83,6 +98,10 @@ public class KeyInfoFormatter {
     }
 
     public void formatStatusIcon(ImageView statusIcon) {
+        if (keyInfo == null) {
+            statusIcon.setVisibility(View.GONE);
+            return;
+        }
 
         // Note: order is important!
         if (keyInfo.is_revoked()) {
@@ -134,6 +153,11 @@ public class KeyInfoFormatter {
     }
 
     public void formatTrustIcon(ImageView trustIdIcon) {
+        if (keyInfo == null) {
+            trustIdIcon.setVisibility(View.GONE);
+            return;
+        }
+
         if (!keyInfo.has_any_secret() && !keyInfo.autocrypt_package_names().isEmpty()) {
             String packageName = keyInfo.autocrypt_package_names().get(0);
             Drawable drawable = PackageIconGetter.getInstance(context).getDrawableForPackageName(packageName);

@@ -17,7 +17,8 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        tools:showIn="@layout/decrypt_text_fragment">
+        tools:showIn="@layout/decrypt_text_fragment"
+        tools:ignore="NotSibling">
 
         <LinearLayout
             android:orientation="vertical"

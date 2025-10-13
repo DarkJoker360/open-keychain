@@ -16,10 +16,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.StringRes;
-import eu.davidea.flexibleadapter.FlexibleAdapter;
-import eu.davidea.flexibleadapter.items.AbstractFlexibleItem;
-import eu.davidea.flexibleadapter.items.IFlexible;
-import eu.davidea.viewholders.FlexibleViewHolder;
+import androidx.recyclerview.widget.RecyclerView;
 import org.sufficientlysecure.keychain.Keys;
 import org.sufficientlysecure.keychain.R;
 import org.sufficientlysecure.keychain.pgp.CanonicalizedSecretKey.SecretKeyType;
@@ -31,49 +28,9 @@ import org.sufficientlysecure.keychain.ui.ViewKeyAdvSubkeysFragment.SubkeyEditVi
 import org.sufficientlysecure.keychain.ui.util.KeyFormattingUtils;
 
 
-public class SubKeyItem extends AbstractFlexibleItem<SubKeyItem.SubkeyViewHolder> {
-    final Keys subkeyInfo;
-    private final SubkeyEditViewModel viewModel;
+public class SubKeyItem {
 
-    SubKeyItem(Keys subkeyInfo, SubkeyEditViewModel viewModel) {
-        this.subkeyInfo = subkeyInfo;
-        this.viewModel = viewModel;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return o instanceof SubKeyItem && ((SubKeyItem) o).subkeyInfo.getKey_id() == subkeyInfo.getKey_id();
-    }
-
-    @Override
-    public int hashCode() {
-        long key_id = subkeyInfo.getKey_id();
-        return (int) (key_id ^ (key_id >>> 32));
-    }
-
-    @Override
-    public int getLayoutRes() {
-        return R.layout.view_key_adv_subkey_item;
-    }
-
-    @Override
-    public SubkeyViewHolder createViewHolder(View view, FlexibleAdapter<IFlexible> adapter) {
-        return new SubkeyViewHolder(view, adapter);
-    }
-
-    @Override
-    public void bindViewHolder(FlexibleAdapter<IFlexible> adapter, SubkeyViewHolder holder, int position,
-            List<Object> payloads) {
-        holder.bind(subkeyInfo);
-        holder.bindSubkeyAction(subkeyInfo, viewModel.skpBuilder);
-    }
-
-    @Override
-    public int getItemViewType() {
-        return ViewKeyAdvSubkeysFragment.SUBKEY_TYPE_DETAIL;
-    }
-
-    public static class SubkeyViewHolder extends FlexibleViewHolder {
+    public static class SubkeyViewHolder extends RecyclerView.ViewHolder {
         final TextView vKeyId;
         final TextView vKeyDetails;
         final TextView vKeyStatus;
@@ -84,9 +41,11 @@ public class SubKeyItem extends AbstractFlexibleItem<SubKeyItem.SubkeyViewHolder
         final View vActionLayout;
         final TextView vActionText;
         final ImageView vActionCancel;
+        final RecyclerView.Adapter adapter;
 
-        public SubkeyViewHolder(View itemView, FlexibleAdapter adapter) {
-            super(itemView, adapter);
+        public SubkeyViewHolder(View itemView, RecyclerView.Adapter adapter) {
+            super(itemView);
+            this.adapter = adapter;
 
             vKeyId = itemView.findViewById(R.id.subkey_item_key_id);
             vKeyDetails = itemView.findViewById(R.id.subkey_item_details);
@@ -100,7 +59,7 @@ public class SubKeyItem extends AbstractFlexibleItem<SubKeyItem.SubkeyViewHolder
             vActionCancel = itemView.findViewById(R.id.button_subkey_action_cancel);
         }
 
-        void bind(Keys subkeyInfo) {
+        public void bind(Keys subkeyInfo) {
             bindKeyId(subkeyInfo.getKey_id(), subkeyInfo.getRank() == 0);
             bindKeyDetails(subkeyInfo.getAlgorithm(), subkeyInfo.getKey_size(), subkeyInfo.getKey_curve_oid(), subkeyInfo.getHas_secret());
             bindKeyFlags(subkeyInfo.getCan_certify(), subkeyInfo.getCan_sign(), subkeyInfo.getCan_encrypt(), subkeyInfo.getCan_authenticate());
@@ -198,7 +157,7 @@ public class SubKeyItem extends AbstractFlexibleItem<SubKeyItem.SubkeyViewHolder
             vKeyDetails.setText(algorithmStr);
         }
 
-        private void bindSubkeyAction(Keys subkeyInfo, Builder saveKeyringParcelBuilder) {
+        public void bindSubkeyAction(Keys subkeyInfo, Builder saveKeyringParcelBuilder) {
             if (saveKeyringParcelBuilder == null) {
                 itemView.setClickable(false);
                 vActionLayout.setVisibility(View.GONE);
@@ -215,7 +174,7 @@ public class SubKeyItem extends AbstractFlexibleItem<SubKeyItem.SubkeyViewHolder
 
             OnClickListener onClickRemoveModificationListener = v -> {
                 saveKeyringParcelBuilder.removeModificationsForSubkey(subkeyInfo.getKey_id());
-                mAdapter.notifyItemChanged(getAdapterPosition());
+                adapter.notifyItemChanged(getAdapterPosition());
             };
 
             if (isRevokeAction) {
@@ -264,5 +223,21 @@ public class SubKeyItem extends AbstractFlexibleItem<SubKeyItem.SubkeyViewHolder
             vEncryptIcon.setVisibility(canEncrypt ? View.VISIBLE : View.GONE);
             vAuthenticateIcon.setVisibility(canAuthenticate ? View.VISIBLE : View.GONE);
         }
+
+        public void bindSubkeyAdd(org.sufficientlysecure.keychain.service.SaveKeyringParcel.SubkeyAdd subkeyAdd,
+                org.sufficientlysecure.keychain.ui.ViewKeyAdvSubkeysFragment.SubkeyEditViewModel viewModel) {
+            java.util.Date expiry = subkeyAdd.getExpiry() != null && subkeyAdd.getExpiry() != 0L ?
+                new java.util.Date(subkeyAdd.getExpiry() * 1000) : null;
+
+            bindKeyId(null, false);
+            bindKeyDetails(subkeyAdd.getAlgorithm(), subkeyAdd.getKeySize(), subkeyAdd.getCurve(),
+                org.sufficientlysecure.keychain.pgp.CanonicalizedSecretKey.SecretKeyType.PASSPHRASE);
+            bindKeyStatus(null, expiry, false, true);
+            bindKeyFlags(subkeyAdd.canCertify(), subkeyAdd.canSign(), subkeyAdd.canEncrypt(), subkeyAdd.canAuthenticate());
+            bindSubkeyAction(R.string.subkey_action_create, v -> {
+                viewModel.skpBuilder.getMutableAddSubKeys().remove(subkeyAdd);
+            });
+        }
+
     }
 }
