@@ -32,6 +32,8 @@ import android.os.IBinder;
 
 import org.bouncycastle.bcpg.HashAlgorithmTags;
 import org.bouncycastle.bcpg.PublicKeyAlgorithmTags;
+import org.openintents.openpgp.OpenPgpError;
+import org.openintents.openpgp.util.OpenPgpApi;
 import org.openintents.ssh.authentication.ISshAuthenticationService;
 import org.openintents.ssh.authentication.SshAuthenticationApi;
 import org.openintents.ssh.authentication.SshAuthenticationApiError;
@@ -118,6 +120,7 @@ public class SshAuthenticationService extends Service {
     }
 
     private Intent authenticate(Intent data) {
+        Timber.d("SSH authenticate");
         Intent errorIntent = checkForKeyId(data);
         if (errorIntent != null) {
             return errorIntent;
@@ -161,7 +164,10 @@ public class SshAuthenticationService extends Service {
 
         authData.setAuthenticationSubKeyId(authSubKeyId);
 
-        authData.setAllowedAuthenticationKeyIds(getAllowedKeyIds());
+        String callingPackage = mApiPermissionHelper.getCurrentCallingPackage();
+        if (callingPackage == null || !callingPackage.equals(getPackageName())) {
+            authData.setAllowedAuthenticationKeyIds(getAllowedKeyIds());
+        }
 
         authData.setHashAlgorithm(hashAlgorithmTag);
 
@@ -179,12 +185,14 @@ public class SshAuthenticationService extends Service {
         AuthenticationResult authResult = authOperation.execute(authData.build(), inputParcel, authParcel);
 
         if (authResult.isPending()) {
+            Timber.d("User interaction required");
             RequiredInputParcel requiredInput = authResult.getRequiredInputParcel();
             PendingIntent pi = mApiPendingIntentFactory.requiredInputPi(data, requiredInput,
                     authResult.mCryptoInputParcel);
             // return PendingIntent to be executed by client
             return packagePendingIntent(pi);
         } else if (authResult.success()) {
+            Timber.d("Authentication successful");
             byte[] rawSignature = authResult.getSignature();
             byte[] sshSignature;
             try {
@@ -206,8 +214,9 @@ public class SshAuthenticationService extends Service {
                         throw new NoSuchAlgorithmException("Unknown algorithm");
                 }
             } catch (NoSuchAlgorithmException e) {
-                return createExceptionErrorResult(SshAuthenticationApiError.INTERNAL_ERROR,
-                        "Error converting signature", e);
+                Timber.e(e, "Error converting signature");
+                return createErrorResult(SshAuthenticationApiError.INTERNAL_ERROR,
+                        "Signature generation failed");
             }
             return new SigningResponse(sshSignature).toIntent();
         } else {
@@ -408,7 +417,22 @@ public class SshAuthenticationService extends Service {
         // check if caller is allowed to access OpenKeychain
         Intent result = mApiPermissionHelper.isAllowedOrReturnIntent(data);
         if (result != null) {
-            return result; // disallowed, redirect to registration
+            // Convert OpenPGP API result codes to SSH API result codes
+            int openPgpResultCode = result.getIntExtra(OpenPgpApi.RESULT_CODE, OpenPgpApi.RESULT_CODE_ERROR);
+
+            if (openPgpResultCode == OpenPgpApi.RESULT_CODE_USER_INTERACTION_REQUIRED) {
+                // Convert to SSH API format
+                PendingIntent pendingIntent = result.getParcelableExtra(OpenPgpApi.RESULT_INTENT);
+                Intent sshResult = new Intent();
+                sshResult.putExtra(SshAuthenticationApi.EXTRA_RESULT_CODE, SshAuthenticationApi.RESULT_CODE_USER_INTERACTION_REQUIRED);
+                sshResult.putExtra(SshAuthenticationApi.EXTRA_PENDING_INTENT, pendingIntent);
+                return sshResult;
+            } else {
+                // Convert error to SSH API format
+                OpenPgpError error = result.getParcelableExtra(OpenPgpApi.RESULT_ERROR);
+                String errorMessage = error != null ? error.getMessage() : "Permission denied";
+                return createErrorResult(SshAuthenticationApiError.GENERIC_ERROR, errorMessage);
+            }
         }
 
         return null;

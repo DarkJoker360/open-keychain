@@ -32,22 +32,18 @@ import java.security.NoSuchAlgorithmException;
 public class SshSignatureConverter {
 
     private static String getRsaSignatureFormatId(int hashAlgorithm) throws NoSuchAlgorithmException {
-        switch (hashAlgorithm) {
-            case HashAlgorithmTags.SHA512:
+        return switch (hashAlgorithm) {
+            case HashAlgorithmTags.SHA512 ->
                 // https://tools.ietf.org/html/rfc8332
-                return "rsa-sha2-512";
-
-            case HashAlgorithmTags.SHA256:
+                    "rsa-sha2-512";
+            case HashAlgorithmTags.SHA256 ->
                 // https://tools.ietf.org/html/rfc8332
-                return "rsa-sha2-256";
-
-            case HashAlgorithmTags.SHA1:
+                    "rsa-sha2-256";
+            case HashAlgorithmTags.SHA1 ->
                 // https://tools.ietf.org/html/rfc4253
-                return "ssh-rsa";
-
-            default:
-                throw new NoSuchAlgorithmException("Unknown hash algorithm");
-        }
+                    "ssh-rsa";
+            default -> throw new NoSuchAlgorithmException("Unknown hash algorithm");
+        };
     }
 
     private static byte[] getEcDsaSignatureBlob(byte[] rawSignature) {
@@ -86,7 +82,7 @@ public class SshSignatureConverter {
         byte[] rByte = BigIntegers.asUnsignedByteArray(r);
         byte[] sByte = BigIntegers.asUnsignedByteArray(s);
 
-        int integerLength = getDsaSignatureLength(rByte.length > sByte.length ? rByte.length : sByte.length);
+        int integerLength = getDsaSignatureLength(Math.max(rByte.length, sByte.length));
         int rPaddingLength = integerLength - rByte.length;
         int sPaddingLength = integerLength - sByte.length;
 

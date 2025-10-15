@@ -83,6 +83,7 @@
     <string name="btn_decrypt_files">"Select input file"</string>
     <string name="btn_encrypt_files">"Encrypt files"</string>
     <string name="btn_encrypt_text">"Encrypt text"</string>
+    <string name="btn_add">"Add"</string>
     <string name="btn_add_email">"Add additional email address"</string>
     <string name="btn_unlock">"Unlock"</string>
     <string name="btn_proceed">"Proceed"</string>
@@ -174,6 +175,8 @@
 
     <string name="label_experimental_settings_desc_title">"Warning"</string>
     <string name="label_experimental_settings_desc_summary">"These features are not yet finished or results of user experience/security research. Thus, don't rely on their security and please don't report issues you encounter!"</string>
+
+    <string name="drag_to_reorder">"Drag to reorder"</string>
 
     <string name="label_experimental_settings_theme_summary">"(The icons and many screens are not yet adjusted accordingly for the dark theme)"</string>
 
@@ -635,6 +638,10 @@
     <!-- Navigation Drawer -->
     <string name="nav_keys">"Keys"</string>
     <string name="nav_encrypt_decrypt">"Encrypt/Decrypt"</string>
+    <string name="nav_authentication">"Authentication"</string>
+    <string name="authentication_keys">"Authentication Keys"</string>
+    <string name="no_keys_added">"No authentication keys added yet. Tap + to add a key."</string>
+    <string name="remove_key">"Remove Key"</string>
     <string name="nav_apps">"Apps"</string>
     <string name="my_keys">"My Keys"</string>
     <string name="nav_backup">"Backup/Restore"</string>
@@ -1583,5 +1590,15 @@
     <string name="subkey_action_expiry_date">Expiry will change to %s</string>
     <string name="share_key_clipboard">Share key via clipboard</string>
     <string name="share_key">Share key</string>
+
+    <!-- SSH Agent strings -->
+    <string name="notification_ssh_title">SSH Agent</string>
+    <string name="notification_ssh_content">SSH Agent is running</string>
+    <string name="text_terminate">Terminate</string>
+    <string name="error_connection_failed">Connection failed</string>
+    <string name="error_api_not_accessible">API not accessible</string>
+    <string name="waiting_for_ssh_authentication">Waiting for authentication...</string>
+    <string name="notification_ssh_auth_title">SSH Authentication Required</string>
+    <string name="notification_ssh_auth_content">Tap to authenticate SSH request</string>
 
 </resources>
