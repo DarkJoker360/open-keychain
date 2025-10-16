@@ -1006,7 +1006,7 @@
 
         <!-- SSH Agent Broadcast Receiver for external tool discovery -->
         <receiver
-            android:name=".ssh.SshAgentBroadcastReceiver"
+            android:name="org.sufficientlysecure.keychain.ssh.SshAgentBroadcastReceiver"
             android:enabled="true"
             android:exported="true">
         </receiver>

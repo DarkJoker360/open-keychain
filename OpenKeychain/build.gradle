@@ -96,7 +96,7 @@ android {
         targetSdkVersion 36
         versionCode 60400
         versionName "6.0.4"
-        applicationId "org.sufficientlysecure.keychain"
+        applicationId "org.sufficientlysecure.keychain.yubikey"
         // the androidjunitrunner is broken regarding coverage, see here:
         // https://code.google.com/p/android/issues/detail?id=170607
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -133,12 +133,12 @@ android {
                           'proguard-rules-support.pro'
 
             // Reference them in the java files with e.g. BuildConfig.ACCOUNT_TYPE.
-            buildConfigField "String", "ACCOUNT_TYPE", "\"org.sufficientlysecure.keychain.account\""
-            buildConfigField "String", "PROVIDER_CONTENT_AUTHORITY", "\"org.sufficientlysecure.keychain.provider\""
+            buildConfigField "String", "ACCOUNT_TYPE", "\"org.sufficientlysecure.keychain.yubikey.account\""
+            buildConfigField "String", "PROVIDER_CONTENT_AUTHORITY", "\"org.sufficientlysecure.keychain.yubikey.provider\""
 
             // Reference them in .xml files.
-            resValue "string", "account_type", "org.sufficientlysecure.keychain.account"
-            resValue "string", "provider_content_authority", "org.sufficientlysecure.keychain.provider"
+            resValue "string", "account_type", "org.sufficientlysecure.keychain.yubikey.account"
+            resValue "string", "provider_content_authority", "org.sufficientlysecure.keychain.yubikey.provider"
 
             // Github API
             buildConfigField "String", "GITHUB_CLIENT_ID", "\"c942cd81844d94e7e41b\""
@@ -157,12 +157,12 @@ android {
             applicationIdSuffix ".debug"
 
             // Reference them in the java files with e.g. BuildConfig.ACCOUNT_TYPE.
-            buildConfigField "String", "ACCOUNT_TYPE", "\"org.sufficientlysecure.keychain.debug.account\""
-            buildConfigField "String", "PROVIDER_CONTENT_AUTHORITY", "\"org.sufficientlysecure.keychain.debug.provider\""
+            buildConfigField "String", "ACCOUNT_TYPE", "\"org.sufficientlysecure.keychain.yubikey.debug.account\""
+            buildConfigField "String", "PROVIDER_CONTENT_AUTHORITY", "\"org.sufficientlysecure.keychain.yubikey.debug.provider\""
 
             // Reference them in .xml files.
-            resValue "string", "account_type", "org.sufficientlysecure.keychain.debug.account"
-            resValue "string", "provider_content_authority", "org.sufficientlysecure.keychain.debug.provider"
+            resValue "string", "account_type", "org.sufficientlysecure.keychain.yubikey.debug.account"
+            resValue "string", "provider_content_authority", "org.sufficientlysecure.keychain.yubikey.debug.provider"
 
             // Github API
             buildConfigField "String", "GITHUB_CLIENT_ID", "\"c942cd81844d94e7e41b\""
