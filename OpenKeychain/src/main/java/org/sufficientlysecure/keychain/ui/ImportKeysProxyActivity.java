@@ -156,7 +156,7 @@ public class ImportKeysProxyActivity extends FragmentActivity
      * KEY;MEDIATYPE=application/pgp-keys:https://pgp.mit.edu/pks/lookup?search=0xABAF11C65A2970B130ABE3C479BE3E4300411886
      * KEY;MEDIATYPE=application/pgp-keys:https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xabaf11c65a2970b130abe3c479be3e4300411886
      */
-    private static final Pattern VCARD_KEY_PATTERN = Pattern.compile("(?<=\r?\n)(?:KEY:OPENPGP4FPR:|KEY.*?https.*?\/pks\/lookup\?(?:op=get&)?search=0x|KEY.*?https:\/\/keys.openpgp.org\/vks\/v1\/by-fingerprint\/)([a-fA-F0-9]{40})(?=\r?\n)");
+    private static final Pattern VCARD_KEY_PATTERN = Pattern.compile("(?<=\\r?\\n)(?:KEY:OPENPGP4FPR:|KEY.*?https.*?/pks/lookup\\?(?:op=get&)?search=0x|KEY.*?https://keys\\.openpgp\\.org/vks/v1/by-fingerprint/)([a-fA-F0-9]{40})(?=\\r?\\n)");
 
     private void processScannedContent(String content) {
         // if a VCard was scanned, try to extract the KEY field
