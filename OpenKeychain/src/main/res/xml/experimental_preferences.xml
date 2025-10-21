@@ -6,7 +6,7 @@
         android:title="@string/label_experimental_settings_desc_title" />
 
     <ListPreference
-        android:defaultValue="light"
+        android:defaultValue="auto"
         android:dialogTitle="@string/label_theme"
         android:entries="@array/theme_entries"
         android:entryValues="@array/theme_values"
