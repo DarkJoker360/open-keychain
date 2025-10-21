@@ -125,6 +125,7 @@ android {
     buildTypes {
         release {
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
                           'proguard-rules-base.pro',
                           'proguard-rules-bouncycastle.pro',
