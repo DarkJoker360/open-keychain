@@ -6,7 +6,7 @@ import android.content.ContentValues;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.mockito.ArgumentMatcher;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 
 
 public class TestHelpers {
@@ -32,6 +32,6 @@ public class TestHelpers {
                 return true;
             }
         };
-        return Matchers.argThat(baseMatcher);
+        return ArgumentMatchers.argThat(baseMatcher);
     }
 }

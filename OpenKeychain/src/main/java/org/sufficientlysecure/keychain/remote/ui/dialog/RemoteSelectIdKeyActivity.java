@@ -54,8 +54,6 @@ import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.mikepenz.materialdrawer.util.KeyboardUtil;
 import org.openintents.openpgp.util.OpenPgpApi;
 import org.sufficientlysecure.keychain.R;
 import org.sufficientlysecure.keychain.daos.KeyRepository;
@@ -69,6 +67,7 @@ import org.sufficientlysecure.keychain.ui.MainActivity;
 import org.sufficientlysecure.keychain.ui.base.CryptoOperationHelper;
 import org.sufficientlysecure.keychain.ui.base.CryptoOperationHelper.AbstractCallback;
 import org.sufficientlysecure.keychain.ui.dialog.CustomAlertDialogBuilder;
+import org.sufficientlysecure.keychain.ui.util.KeyboardUtils;
 import org.sufficientlysecure.keychain.ui.util.ThemeChanger;
 import org.sufficientlysecure.keychain.ui.util.recyclerview.DividerItemDecoration;
 import org.sufficientlysecure.keychain.ui.util.recyclerview.RecyclerItemClickListener;
@@ -94,7 +93,7 @@ public class RemoteSelectIdKeyActivity extends FragmentActivity {
 
         presenter = new RemoteSelectIdentityKeyPresenter(getBaseContext(), this);
 
-        KeyboardUtil.hideKeyboard(this);
+        KeyboardUtils.hideKeyboard(this);
 
         RemoteSelectIdViewModel viewModel = ViewModelProviders.of(this).get(RemoteSelectIdViewModel.class);
 

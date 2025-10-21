@@ -42,8 +42,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.mikepenz.materialdrawer.util.KeyboardUtil;
 import org.sufficientlysecure.keychain.R;
 import org.sufficientlysecure.keychain.livedata.GenericLiveData;
 import org.sufficientlysecure.keychain.model.UnifiedKeyInfo;
@@ -51,6 +49,7 @@ import org.sufficientlysecure.keychain.daos.KeyRepository;
 import org.sufficientlysecure.keychain.remote.ui.RemoteSecurityTokenOperationActivity;
 import org.sufficientlysecure.keychain.remote.ui.dialog.RemoteDeduplicatePresenter.RemoteDeduplicateView;
 import org.sufficientlysecure.keychain.ui.dialog.CustomAlertDialogBuilder;
+import org.sufficientlysecure.keychain.ui.util.KeyboardUtils;
 import org.sufficientlysecure.keychain.ui.util.ThemeChanger;
 import org.sufficientlysecure.keychain.ui.util.recyclerview.DividerItemDecoration;
 
@@ -69,7 +68,7 @@ public class RemoteDeduplicateActivity extends FragmentActivity {
 
         presenter = new RemoteDeduplicatePresenter(getBaseContext(), this);
 
-        KeyboardUtil.hideKeyboard(this);
+        KeyboardUtils.hideKeyboard(this);
 
         if (savedInstanceState == null) {
             RemoteDeduplicateDialogFragment frag = new RemoteDeduplicateDialogFragment();

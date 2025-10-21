@@ -46,7 +46,6 @@ import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.mikepenz.materialdrawer.util.KeyboardUtil;
 import org.openintents.ssh.authentication.SshAuthenticationApi;
 import org.sufficientlysecure.keychain.R;
 import org.sufficientlysecure.keychain.daos.ApiAppDao;
@@ -56,6 +55,7 @@ import org.sufficientlysecure.keychain.model.UnifiedKeyInfo;
 import org.sufficientlysecure.keychain.remote.ui.RemoteSecurityTokenOperationActivity;
 import org.sufficientlysecure.keychain.remote.ui.dialog.RemoteSelectAuthenticationKeyPresenter.RemoteSelectAuthenticationKeyView;
 import org.sufficientlysecure.keychain.ui.dialog.CustomAlertDialogBuilder;
+import org.sufficientlysecure.keychain.ui.util.KeyboardUtils;
 import org.sufficientlysecure.keychain.ui.util.ThemeChanger;
 import org.sufficientlysecure.keychain.ui.util.recyclerview.DividerItemDecoration;
 import org.sufficientlysecure.keychain.ui.util.recyclerview.RecyclerItemClickListener;
@@ -75,7 +75,7 @@ public class RemoteSelectAuthenticationKeyActivity extends FragmentActivity {
 
         presenter = new RemoteSelectAuthenticationKeyPresenter(getBaseContext(), this);
 
-        KeyboardUtil.hideKeyboard(this);
+        KeyboardUtils.hideKeyboard(this);
 
         if (savedInstanceState == null) {
             RemoteSelectAuthenticationKeyDialogFragment frag = new RemoteSelectAuthenticationKeyDialogFragment();

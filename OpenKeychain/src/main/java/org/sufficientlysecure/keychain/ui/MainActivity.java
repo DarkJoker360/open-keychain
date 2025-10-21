@@ -67,7 +67,7 @@ public class MainActivity extends BaseSecurityTokenActivity implements FabContai
                 .withHeader(R.layout.main_drawer_header)
                 .withToolbar(mToolbar)
                 .addDrawerItems(
-                        new PrimaryDrawerItem().withName(R.string.nav_keys).withIcon(CommunityMaterial.Icon.cmd_key)
+                        new PrimaryDrawerItem().withName(R.string.nav_keys).withIcon(CommunityMaterial.Icon.cmd_account_key)
                                 .withIdentifier(ID_KEYS).withSelectable(false),
                         new PrimaryDrawerItem().withName(R.string.nav_encrypt_decrypt).withIcon(FontAwesome.Icon.faw_lock)
                                 .withIdentifier(ID_ENCRYPT_DECRYPT).withSelectable(false),
@@ -79,7 +79,7 @@ public class MainActivity extends BaseSecurityTokenActivity implements FabContai
                                 .withIdentifier(ID_BACKUP).withSelectable(false),
                         new DividerDrawerItem(),
                         new PrimaryDrawerItem().withName(R.string.menu_preferences).withIcon(GoogleMaterial.Icon.gmd_settings).withIdentifier(ID_SETTINGS).withSelectable(false),
-                        new PrimaryDrawerItem().withName(R.string.menu_help).withIcon(CommunityMaterial.Icon.cmd_help_circle).withIdentifier(ID_HELP).withSelectable(false)
+                        new PrimaryDrawerItem().withName(R.string.menu_help).withIcon(GoogleMaterial.Icon.gmd_help).withIdentifier(ID_HELP).withSelectable(false)
                 )
                 .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
                     @Override

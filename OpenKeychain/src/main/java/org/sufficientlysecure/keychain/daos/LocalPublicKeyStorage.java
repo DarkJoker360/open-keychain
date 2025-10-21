@@ -27,7 +27,7 @@ import java.io.IOException;
 
 import android.content.Context;
 
-import okhttp3.internal.Util;
+import okhttp3.internal._UtilCommonKt;
 
 
 class LocalPublicKeyStorage {
@@ -66,7 +66,7 @@ class LocalPublicKeyStorage {
         try {
             fileOutputStream.write(encoded);
         } finally {
-            Util.closeQuietly(fileOutputStream);
+            _UtilCommonKt.closeQuietly(fileOutputStream);
         }
     }
 
