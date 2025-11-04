@@ -61,6 +61,9 @@ public class SshAgentBroadcastReceiver extends BroadcastReceiver {
     private void handleAgentRequest(Context context, Intent request) {
         Timber.d("SSH Agent request received");
 
+        android.util.Log.e("SshAgentBroadcast", "========== BROADCAST RECEIVED ==========");
+        android.util.Log.e("SshAgentBroadcast", "ALL INTENT EXTRAS: " + request.getExtras());
+
         // Rate limiting check
         String callingPackage = context.getPackageName(); // Will be overridden in real scenario
         if (!checkRateLimit(callingPackage)) {
@@ -72,12 +75,40 @@ public class SshAgentBroadcastReceiver extends BroadcastReceiver {
         // Extract protocol version and port from OkcAgent-style request
         int clientProto = request.getIntExtra(EXTRA_SSH_PROTO_VER, -999);
         int proxyPort = request.getIntExtra(EXTRA_PROXY_PORT, -999);
-        String certPem = request.getStringExtra(EXTRA_CERT_PEM);
+        String certPemB64 = request.getStringExtra(EXTRA_CERT_PEM);
         String certFingerprint = request.getStringExtra(EXTRA_CERT_FINGERPRINT);
         String authToken = request.getStringExtra(EXTRA_AUTH_TOKEN);
 
+        android.util.Log.d("SshAgentBroadcast", "Broadcast received - Proto: " + clientProto + ", Port: " + proxyPort);
+        android.util.Log.d("SshAgentBroadcast", "certPemB64 is null: " + (certPemB64 == null) + ", isEmpty: " + (certPemB64 != null && certPemB64.isEmpty()));
+        if (certPemB64 != null) {
+            android.util.Log.d("SshAgentBroadcast", "certPemB64 length: " + certPemB64.length());
+            android.util.Log.d("SshAgentBroadcast", "certPemB64 content: " + certPemB64);
+        }
+        android.util.Log.d("SshAgentBroadcast", "certFingerprint: " + certFingerprint);
+        android.util.Log.d("SshAgentBroadcast", "authToken is null: " + (authToken == null));
+        if (authToken != null) {
+            android.util.Log.d("SshAgentBroadcast", "authToken content: " + authToken);
+        }
+
+        // Decode certificate PEM from base64
+        String certPem = null;
+        if (certPemB64 != null && !certPemB64.isEmpty()) {
+            try {
+                byte[] certPemBytes = android.util.Base64.decode(certPemB64, android.util.Base64.DEFAULT);
+                certPem = new String(certPemBytes, java.nio.charset.StandardCharsets.UTF_8);
+                android.util.Log.d("SshAgentBroadcast", "Successfully decoded certificate PEM: " + certPem.length() + " bytes");
+                Timber.d("Decoded certificate PEM: %d bytes", certPem.length());
+            } catch (Exception e) {
+                android.util.Log.e("SshAgentBroadcast", "Failed to decode certificate PEM from base64", e);
+                Timber.e(e, "Failed to decode certificate PEM from base64");
+            }
+        } else {
+            android.util.Log.e("SshAgentBroadcast", "certPemB64 is null or empty!");
+        }
+
         // Check protocol version compatibility
-        final int PROTO_VER = 0;
+        final int PROTO_VER = 1;  // Updated to 1 for TLS support
         if (clientProto != PROTO_VER) {
             String errorMsg = "Incompatible SSH protocol version. Client: " + clientProto + ", Server: " + PROTO_VER;
             Timber.e(errorMsg);

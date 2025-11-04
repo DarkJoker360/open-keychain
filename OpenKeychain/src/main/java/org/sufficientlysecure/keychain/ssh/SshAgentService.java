@@ -130,13 +130,22 @@ public class SshAgentService extends AgentService {
     @Override
     public void runAgent(int port, Intent intent) {
         Timber.d("Starting SSH agent");
+        android.util.Log.d("SshAgentService", "runAgent called with port: " + port);
 
         // Extract TLS credentials from intent
         String certPem = intent.getStringExtra(SshAgentBroadcastReceiver.EXTRA_CERT_PEM);
         String certFingerprint = intent.getStringExtra(SshAgentBroadcastReceiver.EXTRA_CERT_FINGERPRINT);
         String authTokenHex = intent.getStringExtra(SshAgentBroadcastReceiver.EXTRA_AUTH_TOKEN);
 
+        android.util.Log.d("SshAgentService", "certPem is null: " + (certPem == null) + ", isEmpty: " + (certPem != null && certPem.isEmpty()));
+        if (certPem != null) {
+            android.util.Log.d("SshAgentService", "certPem length: " + certPem.length());
+        }
+        android.util.Log.d("SshAgentService", "certFingerprint: " + certFingerprint);
+        android.util.Log.d("SshAgentService", "authTokenHex is null: " + (authTokenHex == null));
+
         if (certPem == null || certFingerprint == null || authTokenHex == null) {
+            android.util.Log.e("SshAgentService", "Missing TLS credentials in intent!");
             Timber.e("Missing TLS credentials in intent");
             Utils.showError(this, "Missing TLS credentials");
             checkThreadExit(port);
