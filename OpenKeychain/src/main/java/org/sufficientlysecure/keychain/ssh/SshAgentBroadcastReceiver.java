@@ -39,7 +39,7 @@ public class SshAgentBroadcastReceiver extends BroadcastReceiver {
     public static final String EXTRA_PACKAGE_NAME = "package_name";
     public static final String EXTRA_SSH_PROTO_VER = "org.sufficientlysecure.keychain.extra.SSH_PROTO_VER";
     public static final String EXTRA_PROXY_PORT = "org.sufficientlysecure.keychain.extra.PROXY_PORT";
-    public static final String EXTRA_CERT_PEM = "org.sufficientlysecure.keychain.extra.CERT_PEM";
+    public static final String EXTRA_CERT_DER = "org.sufficientlysecure.keychain.extra.CERT_DER";
     public static final String EXTRA_CERT_FINGERPRINT = "org.sufficientlysecure.keychain.extra.CERT_FINGERPRINT";
     public static final String EXTRA_AUTH_TOKEN = "org.sufficientlysecure.keychain.extra.AUTH_TOKEN";
 
@@ -75,36 +75,31 @@ public class SshAgentBroadcastReceiver extends BroadcastReceiver {
         // Extract protocol version and port from OkcAgent-style request
         int clientProto = request.getIntExtra(EXTRA_SSH_PROTO_VER, -999);
         int proxyPort = request.getIntExtra(EXTRA_PROXY_PORT, -999);
-        String certPemB64 = request.getStringExtra(EXTRA_CERT_PEM);
+        String certDerB64 = request.getStringExtra(EXTRA_CERT_DER);
         String certFingerprint = request.getStringExtra(EXTRA_CERT_FINGERPRINT);
         String authToken = request.getStringExtra(EXTRA_AUTH_TOKEN);
 
         android.util.Log.d("SshAgentBroadcast", "Broadcast received - Proto: " + clientProto + ", Port: " + proxyPort);
-        android.util.Log.d("SshAgentBroadcast", "certPemB64 is null: " + (certPemB64 == null) + ", isEmpty: " + (certPemB64 != null && certPemB64.isEmpty()));
-        if (certPemB64 != null) {
-            android.util.Log.d("SshAgentBroadcast", "certPemB64 length: " + certPemB64.length());
-            android.util.Log.d("SshAgentBroadcast", "certPemB64 content: " + certPemB64);
+        android.util.Log.d("SshAgentBroadcast", "certDerB64 is null: " + (certDerB64 == null) + ", isEmpty: " + (certDerB64 != null && certDerB64.isEmpty()));
+        if (certDerB64 != null) {
+            android.util.Log.d("SshAgentBroadcast", "certDerB64 length: " + certDerB64.length());
         }
         android.util.Log.d("SshAgentBroadcast", "certFingerprint: " + certFingerprint);
         android.util.Log.d("SshAgentBroadcast", "authToken is null: " + (authToken == null));
-        if (authToken != null) {
-            android.util.Log.d("SshAgentBroadcast", "authToken content: " + authToken);
-        }
 
-        // Decode certificate PEM from base64
-        String certPem = null;
-        if (certPemB64 != null && !certPemB64.isEmpty()) {
+        // Decode certificate DER from base64
+        byte[] certDer = null;
+        if (certDerB64 != null && !certDerB64.isEmpty()) {
             try {
-                byte[] certPemBytes = android.util.Base64.decode(certPemB64, android.util.Base64.DEFAULT);
-                certPem = new String(certPemBytes, java.nio.charset.StandardCharsets.UTF_8);
-                android.util.Log.d("SshAgentBroadcast", "Successfully decoded certificate PEM: " + certPem.length() + " bytes");
-                Timber.d("Decoded certificate PEM: %d bytes", certPem.length());
+                certDer = android.util.Base64.decode(certDerB64, android.util.Base64.DEFAULT);
+                android.util.Log.d("SshAgentBroadcast", "Successfully decoded certificate DER: " + certDer.length + " bytes");
+                Timber.d("Decoded certificate DER: %d bytes", certDer.length);
             } catch (Exception e) {
-                android.util.Log.e("SshAgentBroadcast", "Failed to decode certificate PEM from base64", e);
-                Timber.e(e, "Failed to decode certificate PEM from base64");
+                android.util.Log.e("SshAgentBroadcast", "Failed to decode certificate DER from base64", e);
+                Timber.e(e, "Failed to decode certificate DER from base64");
             }
         } else {
-            android.util.Log.e("SshAgentBroadcast", "certPemB64 is null or empty!");
+            android.util.Log.e("SshAgentBroadcast", "certDerB64 is null or empty!");
         }
 
         // Check protocol version compatibility
@@ -126,8 +121,8 @@ public class SshAgentBroadcastReceiver extends BroadcastReceiver {
         }
 
         // Validate TLS credentials
-        if (certPem == null || certPem.isEmpty()) {
-            Timber.e("Missing certificate PEM");
+        if (certDer == null || certDer.length == 0) {
+            Timber.e("Missing certificate DER");
             Utils.showError(context, "Missing certificate");
             return;
         }
@@ -149,7 +144,7 @@ public class SshAgentBroadcastReceiver extends BroadcastReceiver {
         Intent serviceIntent = new Intent(context, SshAgentService.class);
         serviceIntent.setAction(AgentService.ACTION_RUN_AGENT);
         serviceIntent.putExtra(AgentService.EXTRA_PROXY_PORT, proxyPort);
-        serviceIntent.putExtra(EXTRA_CERT_PEM, certPem);
+        serviceIntent.putExtra(EXTRA_CERT_DER, certDer);
         serviceIntent.putExtra(EXTRA_CERT_FINGERPRINT, certFingerprint);
         serviceIntent.putExtra(EXTRA_AUTH_TOKEN, authToken);
 

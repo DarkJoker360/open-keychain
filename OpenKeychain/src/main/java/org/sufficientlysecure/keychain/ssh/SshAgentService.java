@@ -78,13 +78,12 @@ public class SshAgentService extends AgentService {
     /**
      * Create a TLS socket with certificate pinning
      */
-    private SSLSocket createTlsSocket(String certPem, String expectedFingerprint, int port) throws Exception {
+    private SSLSocket createTlsSocket(byte[] certDer, String expectedFingerprint, int port) throws Exception {
         Timber.d("Creating TLS socket with certificate pinning");
 
-        // Parse the certificate from PEM
+        // Parse the certificate from DER bytes directly
         CertificateFactory cf = CertificateFactory.getInstance("X.509");
-        byte[] certBytes = certPem.getBytes(StandardCharsets.UTF_8);
-        Certificate cert = cf.generateCertificate(new ByteArrayInputStream(certBytes));
+        Certificate cert = cf.generateCertificate(new ByteArrayInputStream(certDer));
 
         // Calculate the fingerprint of the certificate
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -96,11 +95,16 @@ public class SshAgentService extends AgentService {
         }
         String actualFingerprint = fingerprintBuilder.toString();
 
+        android.util.Log.e("SshAgentService", "========== FINGERPRINT COMPARISON ==========");
+        android.util.Log.e("SshAgentService", "Expected (from Rust): " + expectedFingerprint);
+        android.util.Log.e("SshAgentService", "Actual (calculated):  " + actualFingerprint);
+        android.util.Log.e("SshAgentService", "certDer length: " + certDer.length);
         Timber.d("Expected fingerprint: %s", expectedFingerprint);
         Timber.d("Actual fingerprint: %s", actualFingerprint);
 
         // Verify fingerprint matches
         if (!actualFingerprint.equals(expectedFingerprint)) {
+            android.util.Log.e("SshAgentService", "FINGERPRINT MISMATCH!");
             throw new SecurityException("Certificate fingerprint mismatch!");
         }
 
@@ -133,18 +137,18 @@ public class SshAgentService extends AgentService {
         android.util.Log.d("SshAgentService", "runAgent called with port: " + port);
 
         // Extract TLS credentials from intent
-        String certPem = intent.getStringExtra(SshAgentBroadcastReceiver.EXTRA_CERT_PEM);
+        byte[] certDer = intent.getByteArrayExtra(SshAgentBroadcastReceiver.EXTRA_CERT_DER);
         String certFingerprint = intent.getStringExtra(SshAgentBroadcastReceiver.EXTRA_CERT_FINGERPRINT);
         String authTokenHex = intent.getStringExtra(SshAgentBroadcastReceiver.EXTRA_AUTH_TOKEN);
 
-        android.util.Log.d("SshAgentService", "certPem is null: " + (certPem == null) + ", isEmpty: " + (certPem != null && certPem.isEmpty()));
-        if (certPem != null) {
-            android.util.Log.d("SshAgentService", "certPem length: " + certPem.length());
+        android.util.Log.d("SshAgentService", "certDer is null: " + (certDer == null));
+        if (certDer != null) {
+            android.util.Log.d("SshAgentService", "certDer length: " + certDer.length);
         }
         android.util.Log.d("SshAgentService", "certFingerprint: " + certFingerprint);
         android.util.Log.d("SshAgentService", "authTokenHex is null: " + (authTokenHex == null));
 
-        if (certPem == null || certFingerprint == null || authTokenHex == null) {
+        if (certDer == null || certFingerprint == null || authTokenHex == null) {
             android.util.Log.e("SshAgentService", "Missing TLS credentials in intent!");
             Timber.e("Missing TLS credentials in intent");
             Utils.showError(this, "Missing TLS credentials");
@@ -155,7 +159,7 @@ public class SshAgentService extends AgentService {
         SSLSocket socket = null;
         try {
             Timber.d("Creating TLS connection to proxy server");
-            socket = createTlsSocket(certPem, certFingerprint, port);
+            socket = createTlsSocket(certDer, certFingerprint, port);
 
             InputStream input = socket.getInputStream();
             OutputStream output = socket.getOutputStream();
