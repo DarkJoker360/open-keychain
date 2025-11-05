@@ -28,17 +28,24 @@ import org.sufficientlysecure.keychain.pgp.CanonicalizedPublicKey;
 import org.sufficientlysecure.keychain.pgp.SshPublicKey;
 import org.sufficientlysecure.keychain.pgp.exception.PgpGeneralException;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ConnectException;
-import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
+import java.security.KeyStore;
+import java.security.MessageDigest;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManagerFactory;
 import timber.log.Timber;
 
 public class SshAgentService extends AgentService {
@@ -54,18 +61,71 @@ public class SshAgentService extends AgentService {
         return error != null ? error.getMessage() : null;
     }
 
+    /**
+     * Create a TLS socket with certificate pinning
+     */
+    private SSLSocket createTlsSocket(byte[] certDer, String expectedFingerprint, int port) throws Exception {
+        Timber.d("Creating TLS socket with certificate pinning");
+
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        Certificate cert = cf.generateCertificate(new ByteArrayInputStream(certDer));
+
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        certDer = cert.getEncoded();
+        byte[] hash = digest.digest(certDer);
+        StringBuilder fingerprintBuilder = new StringBuilder("sha256:");
+        for (byte b : hash) {
+            fingerprintBuilder.append(String.format("%02x", b));
+        }
+        String actualFingerprint = fingerprintBuilder.toString();
+        Timber.d("Expected fingerprint: %s", expectedFingerprint);
+        Timber.d("Actual fingerprint: %s", actualFingerprint);
+
+        if (!actualFingerprint.equals(expectedFingerprint)) {
+            throw new SecurityException("Certificate fingerprint mismatch!");
+        }
+
+        Timber.d("Certificate fingerprint verified");
+
+        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        keyStore.load(null, null);
+        keyStore.setCertificateEntry("server", cert);
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(keyStore);
+
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, tmf.getTrustManagers(), null);
+        SSLSocket socket = (SSLSocket) sslContext.getSocketFactory().createSocket("127.0.0.1", port);
+        socket.setSoTimeout(30000); // 30 seconds
+
+        Timber.d("TLS socket created and connected");
+        return socket;
+    }
+
     @Override
     public void runAgent(int port, Intent intent) {
         Timber.d("Starting SSH agent for port %d", port);
 
-        Socket socket = null;
+        byte[] certDer = intent.getByteArrayExtra(SshAgentBroadcastReceiver.EXTRA_CERT_DER);
+        String certFingerprint = intent.getStringExtra(SshAgentBroadcastReceiver.EXTRA_CERT_FINGERPRINT);
+        String authTokenHex = intent.getStringExtra(SshAgentBroadcastReceiver.EXTRA_AUTH_TOKEN);
+
+        if (certDer == null || certFingerprint == null || authTokenHex == null) {
+            Timber.e("Missing TLS credentials in intent");
+            Utils.showError(this, "Missing TLS credentials");
+            checkThreadExit(port);
+            return;
+        }
+
+        SSLSocket socket = null;
         try {
             // Retry connection with exponential backoff if agent needs time to start listening
             long retryDelay = CONNECTION_RETRY_INITIAL_DELAY_MS;
 
             for (int attempt = 1; attempt <= MAX_CONNECTION_RETRIES; attempt++) {
                 try {
-                    socket = new Socket("127.0.0.1", port);
+                    Timber.d("Creating TLS connection to proxy server");
+                    socket = createTlsSocket(certDer, certFingerprint, port);
                     socket.setSoTimeout(SOCKET_TIMEOUT_MS);
                     socket.setTcpNoDelay(true);
                     socket.setKeepAlive(true);
@@ -87,6 +147,22 @@ public class SshAgentService extends AgentService {
 
             InputStream input = socket.getInputStream();
             OutputStream output = socket.getOutputStream();
+
+            Timber.d("Sending authentication token");
+            byte[] authToken = Utils.hexStringToByteArray(authTokenHex);
+            output.write(authToken);
+            output.flush();
+
+            byte[] response = new byte[2];
+            int bytesRead = input.read(response);
+            if (bytesRead != 2 || response[0] != 'O' || response[1] != 'K') {
+                Timber.e("Authentication failed");
+                Utils.showError(this, "Authentication failed");
+                checkThreadExit(port);
+                return;
+            }
+
+            Timber.d("Authentication successful, starting SSH agent protocol");
 
             // Load SSH keys from storage
             AuthenticationKeyStorage authKeyStorage = new AuthenticationKeyStorage(this);

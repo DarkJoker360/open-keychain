@@ -29,6 +29,10 @@ public class SshAgentBroadcastReceiver extends BroadcastReceiver {
 
     public static final String EXTRA_SSH_PROTO_VER = "org.sufficientlysecure.keychain.extra.SSH_PROTO_VER";
     public static final String EXTRA_PROXY_PORT = "org.sufficientlysecure.keychain.extra.PROXY_PORT";
+    public static final String EXTRA_CERT_DER_HEX = "org.sufficientlysecure.keychain.extra.CERT_DER_HEX";
+    public static final String EXTRA_CERT_DER = "org.sufficientlysecure.keychain.extra.CERT_DER";
+    public static final String EXTRA_CERT_FINGERPRINT = "org.sufficientlysecure.keychain.extra.CERT_FINGERPRINT";
+    public static final String EXTRA_AUTH_TOKEN = "org.sufficientlysecure.keychain.extra.AUTH_TOKEN";
 
     private static final long RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
     private static final int MAX_REQUESTS_PER_WINDOW = 10;
@@ -53,9 +57,25 @@ public class SshAgentBroadcastReceiver extends BroadcastReceiver {
 
         int clientProto = request.getIntExtra(EXTRA_SSH_PROTO_VER, -999);
         int proxyPort = request.getIntExtra(EXTRA_PROXY_PORT, -999);
+        String certDerHex = request.getStringExtra(EXTRA_CERT_DER_HEX);
+        String certFingerprint = request.getStringExtra(EXTRA_CERT_FINGERPRINT);
+        String authToken = request.getStringExtra(EXTRA_AUTH_TOKEN);
+
+        // Decode certificate DER from hex
+        byte[] certDer = null;
+        if (certDerHex != null && !certDerHex.isEmpty()) {
+            try {
+                certDer = Utils.hexStringToByteArray(certDerHex);
+                Timber.d("Decoded certificate DER: %d bytes", certDer.length);
+            } catch (Exception e) {
+                Timber.e(e, "Failed to decode certificate DER from hex");
+            }
+        } else {
+            Timber.e("Certificate is null or empty!");
+        }
 
         // Check protocol version compatibility
-        final int PROTO_VER = 0;
+        final int PROTO_VER = 1;
         if (clientProto != PROTO_VER) {
             String errorMsg = "Incompatible SSH protocol version. Client: " + clientProto + ", Server: " + PROTO_VER;
             Timber.e(errorMsg);
@@ -72,11 +92,33 @@ public class SshAgentBroadcastReceiver extends BroadcastReceiver {
             return;
         }
 
-        Timber.d("Starting SSH agent for port: %d", proxyPort);
+        // Validate TLS credentials
+        if (certDer == null || certDer.length == 0) {
+            Timber.e("Missing certificate DER");
+            Utils.showError(context, "Missing certificate");
+            return;
+        }
+
+        if (certFingerprint == null || certFingerprint.isEmpty()) {
+            Timber.e("Missing certificate fingerprint");
+            Utils.showError(context, "Missing certificate fingerprint");
+            return;
+        }
+
+        if (authToken == null || authToken.isEmpty()) {
+            Timber.e("Missing authentication token");
+            Utils.showError(context, "Missing authentication token");
+            return;
+        }
+
+        Timber.d("Starting SSH agent for port: %d with TLS", proxyPort);
 
         Intent serviceIntent = new Intent(context, SshAgentService.class);
         serviceIntent.setAction(AgentService.ACTION_RUN_AGENT);
         serviceIntent.putExtra(AgentService.EXTRA_PROXY_PORT, proxyPort);
+        serviceIntent.putExtra(EXTRA_CERT_DER, certDer);
+        serviceIntent.putExtra(EXTRA_CERT_FINGERPRINT, certFingerprint);
+        serviceIntent.putExtra(EXTRA_AUTH_TOKEN, authToken);
 
         context.startService(serviceIntent);
     }
