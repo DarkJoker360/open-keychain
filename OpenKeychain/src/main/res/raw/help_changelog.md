@@ -1,5 +1,15 @@
 [//]: # (NOTE: Please put every sentence in its own line, Transifex puts every line in its own translation field!)
 
+## 6.0.5
+  * Add monochrome icon
+  * Add security token authentication feature
+  * Enable shrinkResources on release builds
+  * Fix apps installed detection in apps page
+  * Improve vCard regex
+  * Securize authentication protocol
+  * Set default theme to auto
+  * Update dependencies and related code
+
 ## 6.0.4
   * Update translations
   * Fix dark theme issue in backup dialog
